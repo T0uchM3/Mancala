@@ -12,15 +12,25 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.DnDConstants;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.ArrayList;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.TransferHandler;
@@ -32,9 +42,16 @@ public class TesT2
 	private JFrame frame;
 	private JTextField txtPlayerOne;
 	private JTextField txtPlayerTwo;
-	JButton btn11;
-	JButton btn12;
-	ArrayList<JButton> btnList = new ArrayList<JButton>();
+	static JLabel midLab;
+	JButton btnDrag;
+	JLabel firstMarker;
+	JLabel secondMarker;
+	JButton startBtn;
+	static boolean localPlayerTurn = true;
+	static boolean sender = false;
+
+	static JButton btnDrop;
+	static ArrayList<JButton> btnList = new ArrayList<JButton>();
 
 	/**
 	 * Launch the application.
@@ -62,17 +79,58 @@ public class TesT2
 				}
 			}
 		});
+
 	}
 
 	/**
 	 * Create the application.
+	 * 
+	 * @throws IOException
 	 */
-	public TesT2()
+	public TesT2() throws Exception
 	{
 		initialize();
 	}
 
-	MouseMotionListener ml = new MouseMotionListener()
+	void sendPacket()
+	{
+		try
+		{
+			DatagramSocket ds = new DatagramSocket();
+			String str = "hello world";
+			InetAddress ia = InetAddress.getByName("127.0.0.1");
+			DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
+			ds.send(dp);
+			ds.close();
+		} catch (Exception ex)
+		{
+			// TODO: handle exception
+		}
+	}
+
+	static void updateValueNet(String val)
+	{
+		midLab.setText(val);
+		System.out.println(val);
+	}
+
+	static void updateValue(String btnDragText, String btnDragName, String btnDropName, String btnDropText)
+	{
+		for (int i = 0; i < btnList.size(); i++)
+		{
+			if (btnList.get(i).getName() == btnDragName)
+				btnList.get(i).setText(btnDragText);
+			if (btnList.get(i).getName() == btnDropName)
+				btnList.get(i).setText(btnDropText);
+		}
+	}
+
+	void turnManagment()
+	{
+
+	}
+
+	MouseMotionListener mml = new MouseMotionListener()
 	{
 
 		@Override
@@ -89,28 +147,71 @@ public class TesT2
 			JComponent jc = (JComponent) e.getSource();
 			TransferHandler th = jc.getTransferHandler();
 			th.exportAsDrag(jc, e, TransferHandler.COPY);
-			if (jc.getName() == "btn11")
+			for (int i = 0; i < btnList.size(); i++)
 			{
-				System.out.println("testDebugg " + btnList.get(0).getName());
-				btnList.get(0).setTransferHandler(new ValueExportTransferHandler("text"));
-				btnList.get(1).setTransferHandler(new ValueImportTransferHandler());
-//				btn12.setTransferHandler(new ValueImportTransferHandler());
+				if (jc.getName() == btnList.get(i).getName())
+				{
+					btnList.get(i).setTransferHandler(new ValueExportTransferHandler(""));
+					for (int j = 0; j < btnList.size(); j++)
+					{
+						if (btnList.get(j).getName() != btnList.get(i).getName())
+						{
+							btnList.get(j).setTransferHandler(new ValueImportTransferHandler());
+						}
+
+					}
+				}
 			}
-			if (jc.getName() == "btn12")
-			{
-				btnList.get(1).setTransferHandler(new ValueExportTransferHandler("text"));
-				btnList.get(0).setTransferHandler(new ValueImportTransferHandler());
-			}
-//			System.out.println("testDebugg " + jc.get);
+		}
+	};
+	MouseListener ml = new MouseListener()
+	{
+
+		@Override
+		public void mouseReleased(MouseEvent e)
+		{
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void mousePressed(MouseEvent e)
+		{
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void mouseExited(MouseEvent e)
+		{
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void mouseEntered(MouseEvent e)
+		{
+
+			// TODO Auto-generated method stub
+			if (e.getModifiersEx() == InputEvent.CTRL_DOWN_MASK)
+				System.out.println("IN");
+		}
+
+		@Override
+		public void mouseClicked(MouseEvent e)
+		{
+			// TODO Auto-generated method stub
+
 		}
 	};
 
 	/**
 	 * Initialise the contents of the frame.
+	 * 
+	 * @throws IOException
 	 */
-	private void initialize()
+	private void initialize() throws Exception
 	{
-
 		frame = new JFrame();
 		frame.setResizable(false);
 		frame.getContentPane().setBackground(new Color(224, 255, 255));
@@ -135,6 +236,9 @@ public class TesT2
 		gbc_panel.gridy = 0;
 		frame.getContentPane().add(panel, gbc_panel);
 
+		secondMarker = new JLabel(">  ");
+		panel.add(secondMarker);
+
 		txtPlayerTwo = new JTextField();
 		txtPlayerTwo.setText("Player Two");
 		txtPlayerTwo.setHorizontalAlignment(SwingConstants.CENTER);
@@ -157,29 +261,51 @@ public class TesT2
 		panel_1.add(btn11);
 		btn11.setName("btn11");
 		btnList.add(btn11);
-		btn11.addMouseMotionListener(ml);
-		btn11.setTransferHandler(new ValueExportTransferHandler("Test"));
+		btn11.addMouseMotionListener(mml);
+		btn11.addMouseListener(ml);
+		btn11.setTransferHandler(new ValueExportTransferHandler(""));
 //		btn11.setTransferHandler(new ValueImportTransferHandler());
 
 		JButton btn12 = new JButton("5");
 		panel_1.add(btn12);
 		btn12.setName("btn12");
 		btnList.add(btn12);
-		btn12.addMouseMotionListener(ml);
-		btn12.setTransferHandler(new ValueExportTransferHandler("Test"));
+		btn12.addMouseMotionListener(mml);
+		btn12.addMouseListener(ml);
+		btn12.setTransferHandler(new ValueExportTransferHandler(""));
 //		btn12.setTransferHandler(new ValueImportTransferHandler());
 
 		JButton btn13 = new JButton("5");
 		panel_1.add(btn13);
+		btn13.setName("btn13");
+		btnList.add(btn13);
+		btn13.addMouseMotionListener(mml);
+		btn13.addMouseListener(ml);
+		btn13.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JButton btn14 = new JButton("5");
 		panel_1.add(btn14);
+		btn14.setName("btn14");
+		btnList.add(btn14);
+		btn14.addMouseMotionListener(mml);
+		btn14.addMouseListener(ml);
+		btn14.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JButton btn15 = new JButton("5");
 		panel_1.add(btn15);
+		btn15.setName("btn15");
+		btnList.add(btn15);
+		btn15.addMouseMotionListener(mml);
+		btn15.addMouseListener(ml);
+		btn15.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JButton btn16 = new JButton("5");
 		panel_1.add(btn16);
+		btn16.setName("btn16");
+		btnList.add(btn16);
+		btn16.addMouseMotionListener(mml);
+		btn16.addMouseListener(ml);
+		btn16.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JPanel panel_2 = new JPanel();
 		GridBagConstraints gbc_panel_2 = new GridBagConstraints();
@@ -189,9 +315,79 @@ public class TesT2
 		gbc_panel_2.gridy = 2;
 		frame.getContentPane().add(panel_2, gbc_panel_2);
 
-		JLabel lblNewLabel = new JLabel("New label");
-		panel_2.add(lblNewLabel);
-		lblNewLabel.setTransferHandler(new ValueImportTransferHandler());
+		midLab = new JLabel("First or Second?");
+		panel_2.add(midLab);
+		midLab.setTransferHandler(new ValueImportTransferHandler());
+
+		JRadioButton firstRB = new JRadioButton("First");
+		firstRB.setActionCommand("firstRB");
+		panel_2.add(firstRB);
+		firstRB.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				// TODO Auto-generated method stub
+				startBtn.setEnabled(true);
+			}
+		});
+
+		JRadioButton secondRB = new JRadioButton("Second");
+		secondRB.setActionCommand("econdRB");
+		panel_2.add(secondRB);
+		secondRB.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				// TODO Auto-generated method stub
+				startBtn.setEnabled(true);
+			}
+		});
+		ButtonGroup bg = new ButtonGroup();
+		bg.add(firstRB);
+		bg.add(secondRB);
+
+		startBtn = new JButton("Start");
+		startBtn.setEnabled(false);
+		panel_2.add(startBtn);
+		startBtn.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				// TODO Auto-generated method stub
+				if (bg.getSelection().getActionCommand() == "firstRB")
+				{
+					Thread nThread = new Thread(new NetThread());
+					nThread.start();
+					sender = true;
+					System.out.println("sender = " + sender);
+				} else
+				{
+					sendPacket();
+					sender = false;
+					System.out.println("sender = " + sender);
+				}
+
+			}
+		});
+		/************************** NETWORK **************************/
+
+//		DatagramSocket ds = new DatagramSocket(3000);
+//		byte[] buf = new byte[1024];
+//		DatagramPacket dp = new DatagramPacket(buf, 1024);
+//		ds.receive(dp);
+//		String strRecv = new String(dp.getData(), 0, dp.getLength()) + " from " + dp.getAddress().getHostAddress() + ":"
+//				+ dp.getPort();
+//		midLab.setText(strRecv);
+////		System.out.println(strRecv);
+//		ds.close();
+
+		/******************************************************/
 //		lblNewLabel.setTransferHandler(new ValueExportTransferHandler(Integer.toString(index + 1)));
 
 		JPanel panel_3 = new JPanel();
@@ -206,21 +402,52 @@ public class TesT2
 
 		JButton btn01 = new JButton("5");
 		panel_3.add(btn01);
+		btn01.setName("btn01");
+		btnList.add(btn01);
+
+		btn01.addMouseMotionListener(mml);
+		btn01.addMouseListener(ml);
+		btn01.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JButton btn02 = new JButton("5");
 		panel_3.add(btn02);
+		btn02.setName("btn02");
+		btnList.add(btn02);
+		btn02.addMouseMotionListener(mml);
+		btn02.addMouseListener(ml);
+		btn02.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JButton btn03 = new JButton("5");
 		panel_3.add(btn03);
+		btn03.setName("btn03");
+		btnList.add(btn03);
+		btn03.addMouseMotionListener(mml);
+		btn03.addMouseListener(ml);
+		btn03.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JButton btn04 = new JButton("5");
 		panel_3.add(btn04);
+		btn04.setName("btn04");
+		btnList.add(btn04);
+		btn04.addMouseMotionListener(mml);
+		btn04.addMouseListener(ml);
+		btn04.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JButton btn05 = new JButton("5");
 		panel_3.add(btn05);
+		btn05.setName("btn05");
+		btnList.add(btn05);
+		btn05.addMouseMotionListener(mml);
+		btn05.addMouseListener(ml);
+		btn05.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JButton btn06 = new JButton("5");
 		panel_3.add(btn06);
+		btn06.setName("btn06");
+		btnList.add(btn06);
+		btn06.addMouseMotionListener(mml);
+		btn06.addMouseListener(ml);
+		btn06.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JPanel panel_4 = new JPanel();
 		GridBagConstraints gbc_panel_4 = new GridBagConstraints();
@@ -229,6 +456,9 @@ public class TesT2
 		gbc_panel_4.gridx = 0;
 		gbc_panel_4.gridy = 4;
 		frame.getContentPane().add(panel_4, gbc_panel_4);
+
+		firstMarker = new JLabel("> ");
+		panel_4.add(firstMarker);
 
 		txtPlayerOne = new JTextField();
 		txtPlayerOne.setHorizontalAlignment(SwingConstants.CENTER);
@@ -274,7 +504,13 @@ public class TesT2
 		protected void exportDone(JComponent source, Transferable data, int action)
 		{
 			super.exportDone(source, data, action);
-			// Decide what to do after the drop has been accepted
+			// we triggering the number updates from here
+			int dragVal = Integer.parseInt(((JButton) source).getText());
+			int dropVal = Integer.parseInt(TesT2.btnDrop.getText());
+			// we don't go under 0
+			if (dragVal != 0)
+				TesT2.updateValue((dragVal - 1) + "", source.getName(), TesT2.btnDrop.getName(), (dropVal + 1) + "");
+			System.out.println(source.getName() + "  >>>  " + TesT2.btnDrop.getName());
 		}
 
 	}
@@ -314,7 +550,10 @@ public class TesT2
 						}
 						if (component instanceof JButton)
 						{
-							((JButton) component).setText(value.toString());
+
+//							((JButton) component).setText(value.toString());
+							TesT2.btnDrop = (JButton) component;
+							System.out.println("Drop target " + component.getName());
 						}
 					}
 				} catch (Exception exp)
