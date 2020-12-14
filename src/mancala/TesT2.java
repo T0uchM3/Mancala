@@ -18,6 +18,8 @@ import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -39,7 +42,7 @@ import javax.swing.UIManager;
 public class TesT2
 {
 
-	private JFrame frame;
+	private static JFrame frame;
 	private JTextField txtPlayerOne;
 	private JTextField txtPlayerTwo;
 	static JLabel midLab;
@@ -49,17 +52,23 @@ public class TesT2
 	JButton startBtn;
 	static boolean localPlayerTurn = true;
 	static boolean sender = false;
-
+	static ConnectionWindow cw;
 	static JButton btnDrop;
 	static ArrayList<JButton> btnList = new ArrayList<JButton>();
+	static TesT2 window;
 
 	/**
 	 * Launch the application.
 	 */
 	public static void main(String[] args)
 	{
+
 		try
 		{
+
+//			InetAddress.getLocalHost();
+			openConnectionDialog();// open the connection window
+			System.out.println(InetAddress.getLocalHost());
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (Exception ignored)
 		{
@@ -71,8 +80,9 @@ public class TesT2
 			{
 				try
 				{
-					TesT2 window = new TesT2();
-					window.frame.setVisible(true);
+					window = new TesT2();
+					window.frame.setVisible(false);
+					window.frame.setEnabled(false);
 				} catch (Exception e)
 				{
 					e.printStackTrace();
@@ -80,6 +90,35 @@ public class TesT2
 			}
 		});
 
+	}
+
+	static void openConnectionDialog()
+	{
+		cw = new ConnectionWindow();
+//		ConnectionSetup cs = new ConnectionSetup();
+//		cw.setModalityType(ModalityType.APPLICATION_MODAL);
+
+		cw.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		cw.setVisible(true);
+		cw.addWindowListener(new WindowAdapter()
+		{
+			@Override
+			public void windowClosing(WindowEvent e)
+			{
+				// TODO Auto-generated method stub
+				System.out.println("CLOSE");
+				System.exit(0);
+//				cw.dispose();
+//				frame.setVisible(true);
+			}
+		});
+	}
+
+	static void foundPlayer()
+	{
+		cw.setVisible(false);
+		window.frame.setVisible(true);
+		window.frame.setEnabled(true);
 	}
 
 	/**
@@ -98,7 +137,8 @@ public class TesT2
 		{
 			DatagramSocket ds = new DatagramSocket();
 			String str = "hello world";
-			InetAddress ia = InetAddress.getByName("127.0.0.1");
+//			InetAddress ia = InetAddress.getByName("localhost");
+			InetAddress ia = InetAddress.getByName(txtPlayerOne.getText());
 			DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
 			ds.send(dp);
 			ds.close();
@@ -213,6 +253,8 @@ public class TesT2
 	private void initialize() throws Exception
 	{
 		frame = new JFrame();
+		frame.setEnabled(false);
+		frame.setAutoRequestFocus(false);
 		frame.setResizable(false);
 		frame.getContentPane().setBackground(new Color(224, 255, 255));
 		GridBagLayout gridBagLayout = new GridBagLayout();
@@ -256,7 +298,6 @@ public class TesT2
 		gbc_panel_1.gridy = 1;
 		frame.getContentPane().add(panel_1, gbc_panel_1);
 		panel_1.setLayout(new GridLayout(0, 6, 0, 0));
-
 		JButton btn11 = new JButton("5");
 		panel_1.add(btn11);
 		btn11.setName("btn11");
@@ -360,13 +401,13 @@ public class TesT2
 			public void actionPerformed(ActionEvent e)
 			{
 				// TODO Auto-generated method stub
-				if (bg.getSelection().getActionCommand() == "firstRB")
+				if (bg.getSelection().getActionCommand() == "firstRB")// This go first, cuz it wait for incs
 				{
 					Thread nThread = new Thread(new NetThread());
 					nThread.start();
 					sender = true;
 					System.out.println("sender = " + sender);
-				} else
+				} else// and this go second
 				{
 					sendPacket();
 					sender = false;
@@ -380,7 +421,7 @@ public class TesT2
 //		DatagramSocket ds = new DatagramSocket(3000);
 //		byte[] buf = new byte[1024];
 //		DatagramPacket dp = new DatagramPacket(buf, 1024);
-//		ds.receive(dp);
+//		ds.receive(dp);e
 //		String strRecv = new String(dp.getData(), 0, dp.getLength()) + " from " + dp.getAddress().getHostAddress() + ":"
 //				+ dp.getPort();
 //		midLab.setText(strRecv);
