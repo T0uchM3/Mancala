@@ -20,6 +20,7 @@ public class SearchThread
 						System.out.println(InetAddress.getByName(newIp + new Integer(i).toString()));
 						InetAddress addrs = InetAddress.getByName(newIp + new Integer(i).toString());
 						ConnectionWindow.updateStatus();
+
 						if (addrs.isReachable(1000))
 						{
 							System.out.println("Available: " + addrs.getHostAddress());
@@ -53,8 +54,8 @@ public class SearchThread
 						ConnectionWindow.updateStatus();
 						if (addrs.isReachable(1000))
 						{
-							ConnectionWindow.availableIps.add(addrs.toString());
 							System.out.println("Available: " + addrs.getHostAddress());
+							ConnectionWindow.availableIps.add(addrs.toString());
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}
@@ -84,8 +85,8 @@ public class SearchThread
 						ConnectionWindow.updateStatus();
 						if (addrs.isReachable(1000))
 						{
-							ConnectionWindow.availableIps.add(addrs.toString());
 							System.out.println("Available: " + addrs.getHostAddress());
+							ConnectionWindow.availableIps.add(addrs.toString());
 							ConnectionWindow.findPlayer(addrs.toString());
 						}
 						if (halt)
@@ -113,8 +114,9 @@ public class SearchThread
 						ConnectionWindow.updateStatus();
 						if (addrs.isReachable(1000))
 						{
-							ConnectionWindow.availableIps.add(addrs.toString());
 							System.out.println("Available: " + addrs.getHostAddress());
+							ConnectionWindow.availableIps.add(addrs.toString());
+
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}
@@ -143,8 +145,9 @@ public class SearchThread
 						ConnectionWindow.updateStatus();
 						if (addrs.isReachable(1000))
 						{
-							ConnectionWindow.availableIps.add(addrs.toString());
 							System.out.println("Available: " + addrs.getHostAddress());
+							ConnectionWindow.availableIps.add(addrs.toString());
+
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}
@@ -173,8 +176,9 @@ public class SearchThread
 						ConnectionWindow.updateStatus();
 						if (addrs.isReachable(1000))
 						{
-							ConnectionWindow.availableIps.add(addrs.toString());
 							System.out.println("Available: " + addrs.getHostAddress());
+							ConnectionWindow.availableIps.add(addrs.toString());
+
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}
@@ -203,8 +207,9 @@ public class SearchThread
 						ConnectionWindow.updateStatus();
 						if (addrs.isReachable(1000))
 						{
-							ConnectionWindow.availableIps.add(addrs.toString());
 							System.out.println("Available: " + addrs.getHostAddress());
+
+							ConnectionWindow.availableIps.add(addrs.toString());
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}

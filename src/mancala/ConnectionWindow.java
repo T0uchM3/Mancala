@@ -1,8 +1,10 @@
 package mancala;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -12,34 +14,46 @@ import java.awt.event.ItemListener;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 public class ConnectionWindow extends JFrame
 {
 
 	static ConnectionWindow frame;
 	private JPanel contentPane;
-	private JTextField ipAdressTF;
-	boolean specificIP = false;
-	static JLabel statusLab;
+	static boolean specificIP = false;
 	static float counter = 0;
 	static ArrayList<String> availableIps = new ArrayList<>();
 	boolean stop = false;
-	static JButton searchConfirmBtn;
 	static SearchThread st;
 	boolean offline = false;
 	static boolean start = false;
+	static DefaultListModel<String> listModel = new DefaultListModel<String>();
 
 	static boolean searching = false;
+	private JTextField ipAddressTF;
+	static JLabel statusLab;
+	static JButton searchConfirmBtn;
+	JList<String> list;
+	boolean interruptSearch = false;
 
 	/**
 	 * Launch the application.
@@ -80,6 +94,7 @@ public class ConnectionWindow extends JFrame
 			counter = 0;
 			statusLab.setText("waiting...");
 			searching = true;
+			listModel.clear();
 
 			// getting the local IP address
 			String ip = InetAddress.getLocalHost().getHostAddress();
@@ -102,11 +117,12 @@ public class ConnectionWindow extends JFrame
 		}
 	}
 
-	static void findPlayer(String avIP)
+	static void findPlayer(String avIP)// this get triggered everytime the threads find an available IP
 	{
 		try
 		{
 			String fixedIp = avIP.substring(1, avIP.length());
+			updateList(fixedIp);
 			if (!fixedIp.equals(InetAddress.getLocalHost().getHostAddress()))// don't go in if it's our IP
 			{
 				DatagramSocket ds = new DatagramSocket();
@@ -138,19 +154,24 @@ public class ConnectionWindow extends JFrame
 		if (counter != 254)
 			statusLab.setText(s.substring(0, 4) + "%");
 		else
-		{
+		{// changing the last "tick" to become "100%" instead of "100.%"
 			statusLab.setText(s.substring(0, 3) + "%");
+			searching = false;
+			if (!specificIP)
+				searchConfirmBtn.setText("Search");
+			else
+				searchConfirmBtn.setText("Connect");
 			for (int i = 0; i < availableIps.size(); i++)
 			{
 				System.out.println("found::: " + availableIps.get(i));
-				searchConfirmBtn.setText("Search");
-				searching = false;
+
 			}
 		}
 	}
 
 	static void foundPlayer(String playerIp)
 	{
+		System.out.println("found player");
 		if (searching)
 		{
 			st.halt = true;
@@ -178,6 +199,151 @@ public class ConnectionWindow extends JFrame
 
 	}
 
+	void searchBtnEvent()
+	{
+		if (!specificIP)
+		{
+			if (!start)
+			{
+				if (!stop)
+				{// order really matters in the 3 lines bellow
+					stop = true;
+					searchConfirmBtn.setText("Stop");
+					search();
+
+				}
+
+				else
+				{
+					st.halt = true;
+					stop = false;
+					if (!specificIP)
+					{
+						searchConfirmBtn.setText("Search");
+					} else
+					{
+						searchConfirmBtn.setText("Connect");
+						interruptSearch = true;
+					}
+
+				}
+			} else// a player has found us, the search button change to "start" to goto the game
+			{
+				TesT2.foundPlayer();
+			}
+		} else
+		{
+			interruptSearch = false;
+			specificIP = false;
+			try
+			{
+				DatagramSocket ds = new DatagramSocket();
+				String str = "hinllo wurld";
+				System.out.println("ADDRESS BACK");
+				InetAddress ia = InetAddress.getByName(ipAddressTF.getText());
+
+				DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
+				ds.send(dp);
+				ds.close();
+			} catch (Exception e)
+			{
+				// TODO: handle exception
+			}
+
+		}
+
+	}
+
+	void interceptEvent(ItemEvent e)
+	{
+
+		// TODO Auto-generated method stub
+		if (e.getStateChange() == 1)
+		{
+
+		}
+
+		else
+		{
+
+		}
+
+	}
+
+	static void updateList(String ip)
+	{
+		listModel.addElement(ip);
+	}
+
+	void listSelectionEvent(ListSelectionEvent e)
+	{
+		if (!e.getValueIsAdjusting())
+		{
+
+			ipAddressTF.setText(list.getSelectedValue());
+			specificIP = true;
+		}
+	}
+
+	DocumentListener dl = new DocumentListener()
+	{
+
+		@Override
+		public void removeUpdate(DocumentEvent e)
+		{
+			if (stop)
+				return;
+			if (ipAddressTF.getText().length() > 0)
+			{
+				searchConfirmBtn.setText("Connect");
+				specificIP = true;
+			}
+
+			else
+			{
+				searchConfirmBtn.setText("Search");
+				specificIP = false;
+			}
+
+		}
+
+		@Override
+		public void insertUpdate(DocumentEvent e)
+		{
+			if (stop)
+				return;
+			if (ipAddressTF.getText().length() > 0)
+			{
+				searchConfirmBtn.setText("Connect");
+				specificIP = true;
+			}
+
+			else
+			{
+				searchConfirmBtn.setText("Search");
+				specificIP = false;
+			}
+		}
+
+		@Override
+		public void changedUpdate(DocumentEvent e)
+		{
+			if (stop)
+				return;
+			if (ipAddressTF.getText().length() > 0)
+			{
+				searchConfirmBtn.setText("Connect");
+				specificIP = true;
+			}
+
+			else
+			{
+				searchConfirmBtn.setText("Search");
+				specificIP = false;
+			}
+		}
+	};
+
 	/**
 	 * Create the frame.
 	 */
@@ -189,130 +355,138 @@ public class ConnectionWindow extends JFrame
 	private void initialize()
 	{
 		// start the receiving thread
+
 		Thread nThread = new Thread(new NetThread());
 		nThread.start();
 		// **************************
 
 		setResizable(false);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 450, 195);
+		setBounds(100, 100, 450, 209);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
-		contentPane.setLayout(new GridLayout(0, 1, 0, 0));
+		GridBagLayout gbl_contentPane = new GridBagLayout();
+		gbl_contentPane.columnWidths = new int[]
+		{ 424, 0 };
+		gbl_contentPane.rowHeights = new int[]
+		{ 48, 120, 0 };
+		gbl_contentPane.columnWeights = new double[]
+		{ 1.0, Double.MIN_VALUE };
+		gbl_contentPane.rowWeights = new double[]
+		{ 0.0, 1.0, Double.MIN_VALUE };
+		contentPane.setLayout(gbl_contentPane);
 
 		JLabel lblNewLabel = new JLabel("Search for a player");
 		lblNewLabel.setFont(new Font("Tahoma", Font.BOLD, 16));
 		lblNewLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		contentPane.add(lblNewLabel);
+		GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();
+		gbc_lblNewLabel.fill = GridBagConstraints.BOTH;
+		gbc_lblNewLabel.insets = new Insets(0, 0, 5, 0);
+		gbc_lblNewLabel.gridx = 0;
+		gbc_lblNewLabel.gridy = 0;
+		contentPane.add(lblNewLabel, gbc_lblNewLabel);
 
-		JPanel panel_1 = new JPanel();
-		FlowLayout flowLayout = (FlowLayout) panel_1.getLayout();
-		flowLayout.setVgap(20);
-		panel_1.setPreferredSize(new Dimension(200, 10));
-		contentPane.add(panel_1);
-
-		statusLab = new JLabel("Waiting...");
-		panel_1.add(statusLab);
-
-		JPanel panel = new JPanel();
-		contentPane.add(panel);
-		panel.setLayout(new GridLayout(0, 3, 0, 0));
+		JSplitPane splitPane = new JSplitPane();
+		GridBagConstraints gbc_splitPane = new GridBagConstraints();
+		gbc_splitPane.fill = GridBagConstraints.BOTH;
+		gbc_splitPane.gridx = 0;
+		gbc_splitPane.gridy = 1;
+		contentPane.add(splitPane, gbc_splitPane);
 
 		JPanel panel_4 = new JPanel();
-		FlowLayout flowLayout_3 = (FlowLayout) panel_4.getLayout();
-		flowLayout_3.setHgap(3);
-		flowLayout_3.setVgap(7);
-		panel.add(panel_4);
-
-		JCheckBox specificIPCB = new JCheckBox("Specific IP");
-		specificIPCB.setPreferredSize(new Dimension(90, 15));
-		panel_4.add(specificIPCB);
-
-		JCheckBox offlineCB = new JCheckBox("Offline");
-		offlineCB.setPreferredSize(new Dimension(90, 15));
-		panel_4.add(offlineCB);
-		offlineCB.addActionListener(new ActionListener()
-		{
-
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				// TODO Auto-generated method stub
-//						findPlayer();
-			}
-		});
-		specificIPCB.addItemListener(new ItemListener()
-		{
-
-			@Override
-			public void itemStateChanged(ItemEvent e)
-			{
-				// TODO Auto-generated method stub
-				if (e.getStateChange() == 1)
-				{
-					ipAdressTF.setEnabled(true);
-					specificIP = true;
-				}
-
-				else
-				{
-					ipAdressTF.setEnabled(false);
-					specificIP = false;
-				}
-
-			}
-		});
-		JPanel panel_2 = new JPanel();
-		FlowLayout flowLayout_1 = (FlowLayout) panel_2.getLayout();
-		flowLayout_1.setVgap(13);
-		panel.add(panel_2);
+		splitPane.setRightComponent(panel_4);
+		panel_4.setLayout(new BorderLayout(0, 0));
 
 		searchConfirmBtn = new JButton("Search");
-		panel_2.add(searchConfirmBtn);
+		searchConfirmBtn.setPreferredSize(new Dimension(65, 25));
+		panel_4.add(searchConfirmBtn, BorderLayout.SOUTH);
 		searchConfirmBtn.addActionListener(new ActionListener()
 		{
 
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				if (!start)
-				{
-					if (!stop)
-					{// order really matters in the 3 lines bellow
-						stop = true;
-						searchConfirmBtn.setText("Stop");
-						search();
-					}
+				searchBtnEvent();
+			}
+		});
 
-					else
-					{
-						st.halt = true;
-						searchConfirmBtn.setText("Search");
-						stop = false;
-					}
-				} else
-				{
-					TesT2.foundPlayer();
-				}
+		statusLab = new JLabel("Waiting...");
+		statusLab.setPreferredSize(new Dimension(48, 25));
+		statusLab.setHorizontalAlignment(SwingConstants.CENTER);
+		panel_4.add(statusLab, BorderLayout.NORTH);
+
+		JPanel panel = new JPanel();
+		panel_4.add(panel, BorderLayout.CENTER);
+		panel.setLayout(new GridLayout(0, 2, 0, 0));
+
+		JPanel panel_2 = new JPanel();
+		panel.add(panel_2);
+		panel_2.setLayout(new GridLayout(3, 1, 10, -10));
+
+		JLabel placeHolder_1 = new JLabel("   ");
+		panel_2.add(placeHolder_1);
+
+		JCheckBox intercept = new JCheckBox("Intercept ");
+		intercept.setToolTipText(
+				"(Used mainly for debugging) it control whether the program will be able to intercept incoming netwok packets");
+		intercept.setSelected(true);
+		intercept.setPreferredSize(new Dimension(90, 15));
+		panel_2.add(intercept);
+		intercept.addItemListener(new ItemListener()
+		{
+
+			@Override
+			public void itemStateChanged(ItemEvent e)
+			{
 
 			}
 		});
 
-		JPanel panel_3 = new JPanel();
-		FlowLayout flowLayout_2 = (FlowLayout) panel_3.getLayout();
-		flowLayout_2.setVgap(13);
-		flowLayout_2.setHgap(0);
-		panel.add(panel_3);
+		JPanel panel_1 = new JPanel();
+		panel.add(panel_1);
+		panel_1.setLayout(new GridLayout(3, 1, 0, 0));
 
-		ipAdressTF = new JTextField();
-		ipAdressTF.setEnabled(false);
-		ipAdressTF.setMargin(new Insets(2, 10, 2, 10));
-		ipAdressTF.setPreferredSize(new Dimension(20, 25));
-		ipAdressTF.setColumns(10);
-		panel_3.add(ipAdressTF);
+		JLabel placeHolder = new JLabel("   ");
+		panel_1.add(placeHolder);
 
-		JCheckBox checkBox = new JCheckBox("New check box");
-		panel_3.add(checkBox);
+		ipAddressTF = new JTextField();
+		ipAddressTF.setToolTipText("Local ip address, DELETE it if you want to search for other IP address");
+		ipAddressTF.setPreferredSize(new Dimension(120, 40));
+		ipAddressTF.setMargin(new Insets(2, 10, 2, 10));
+		ipAddressTF.setColumns(10);
+		panel_1.add(ipAddressTF);
+		ipAddressTF.getDocument().addDocumentListener(dl);
+		try
+		{
+			ipAddressTF.setText(InetAddress.getLocalHost().getHostAddress());
+		} catch (UnknownHostException e1)
+		{
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		JScrollPane scrollPane_1 = new JScrollPane();
+		scrollPane_1.setMinimumSize(new Dimension(150, 23));
+		scrollPane_1.setPreferredSize(new Dimension(200, 40));
+		splitPane.setLeftComponent(scrollPane_1);
+
+		list = new JList<String>();
+		scrollPane_1.setViewportView(list);
+		list.setModel(listModel);
+		list.addListSelectionListener(new ListSelectionListener()
+		{
+
+			@Override
+			public void valueChanged(ListSelectionEvent e)
+			{
+				// TODO Auto-generated method stub
+				listSelectionEvent(e);
+			}
+		});
+
+		JLabel lblNewLabel_1 = new JLabel("Detected IPs");
+		lblNewLabel_1.setHorizontalAlignment(SwingConstants.CENTER);
+		scrollPane_1.setColumnHeaderView(lblNewLabel_1);
 	}
 }
