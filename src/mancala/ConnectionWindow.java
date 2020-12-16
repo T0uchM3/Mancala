@@ -14,8 +14,8 @@ import java.awt.event.ItemListener;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -49,11 +49,14 @@ public class ConnectionWindow extends JFrame
 	static DefaultListModel<String> listModel = new DefaultListModel<String>();
 
 	static boolean searching = false;
-	private JTextField ipAddressTF;
+	private static JTextField ipAddressTF;
 	static JLabel statusLab;
 	static JButton searchConfirmBtn;
 	JList<String> list;
 	boolean interruptSearch = false;
+	Thread nThread;
+	static boolean invited = false;
+	static String otherPlayerName;
 
 	/**
 	 * Launch the application.
@@ -125,17 +128,17 @@ public class ConnectionWindow extends JFrame
 			updateList(fixedIp);
 			if (!fixedIp.equals(InetAddress.getLocalHost().getHostAddress()))// don't go in if it's our IP
 			{
-				DatagramSocket ds = new DatagramSocket();
-				String str = "helloooooooooooo world";
-				// a wild slash appeared in the ip string
-
-				System.out.println(InetAddress.getLocalHost().getHostAddress() + " INSIDEEEEEEEEE " + fixedIp);
-
-				InetAddress ia = InetAddress.getByName(fixedIp);
-
-				DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
-				ds.send(dp);
-				ds.close();
+//				DatagramSocket ds = new DatagramSocket();
+//				String str = "helloooooooooooo world";
+//				// a wild slash appeared in the ip string
+//
+//				System.out.println(InetAddress.getLocalHost().getHostAddress() + " INSIDEEEEEEEEE " + fixedIp);
+//
+//				InetAddress ia = InetAddress.getByName(fixedIp);
+//
+//				DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
+//				ds.send(dp);
+//				ds.close();
 
 			}
 
@@ -169,88 +172,165 @@ public class ConnectionWindow extends JFrame
 		}
 	}
 
-	static void foundPlayer(String playerIp)
+	public static void wait(int ms)
+	{
+		try
+		{
+			Thread.sleep(ms);
+		} catch (InterruptedException ex)
+		{
+			Thread.currentThread().interrupt();
+		}
+	}
+
+//NetThread start this, when it get an invite from other player 
+	static void foundPlayer(String playerIp, String message)
 	{
 		System.out.println("found player");
-		if (searching)
-		{
-			st.halt = true;
-			try
-			{
-				DatagramSocket ds = new DatagramSocket();
-				String str = "hello baaaaaaack";
-				// a wild slash appeared in the ip string
-//				String fixedIp = avIP.substring(1, avIP.length());
-				System.out.println("ADDRESS BACK");
-				InetAddress ia = InetAddress.getByName(playerIp);
+//		if (searching)
+//		{
+//			st.halt = true;
+		searchConfirmBtn.setEnabled(true);
 
-				DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
-				ds.send(dp);
-				ds.close();
-			} catch (Exception e)
-			{
-				// TODO: handle exception
-			}
+		if (message.substring(0, 1).equals("*"))
+		{
+			statusLab.setText(message.substring(1, message.length()) + " accepted!");
+			searchConfirmBtn.setText("Start");
+			otherPlayerName = message.substring(1, message.length());
 		}
 
-		statusLab.setText("Found a player!");
-		searchConfirmBtn.setText("Start");
-		start = true;
+		else
+		{
+			statusLab.setText(message + " invited you!");
+			searchConfirmBtn.setText("Accept");
+			otherPlayerName = message;
+		}
 
+		invited = true;
+		start = true;
+		try
+		{
+//			wait(1000);
+//			DatagramSocket ds = new DatagramSocket();
+//			String str = "hello baaaaaaack";
+//			// a wild slash appeared in the ip string
+//			String fixedIp = playerIp.substring(1, playerIp.length());
+//
+//			System.out.println("returning it to " + fixedIp);
+//			InetAddress ia = InetAddress.getByName(fixedIp);
+//
+//			DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
+//			ds.send(dp);
+//			ds.close();
+
+		} catch (Exception e)
+		{
+			// TODO: handle exception
+		}
+
+//		}
+	}
+
+	void sendInv()
+	{
+		try
+		{
+
+			DatagramSocket ds = new DatagramSocket();
+			String str;
+			if (invited)
+			{
+				str = "*" + playerNameTF.getText();
+			} else
+			{
+				str = playerNameTF.getText();
+
+			}
+			System.out.println("GOING");
+			InetAddress ia = InetAddress.getByName(ipAddressTF.getText());
+
+			DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
+			ds.send(dp);
+			ds.close();
+			nThread.start();
+
+//			invited = false;
+		} catch (Exception e)
+		{
+			// TODO: handle exception
+		}
 	}
 
 	void searchBtnEvent()
 	{
+
+		if (invited)// when button text = "invite"
+		{
+//			sendInv();
+			System.out.println("c");
+			Core.foundPlayer(playerNameTF.getText(), otherPlayerName);
+		}
+
 		if (!specificIP)
 		{
-			if (!start)
+			if (!start)// "start" is true when NetThread catch something
 			{
-				if (!stop)
+				if (!stop)// when the button text = "Search"
 				{// order really matters in the 3 lines bellow
 					stop = true;
 					searchConfirmBtn.setText("Stop");
 					search();
-
-				}
-
-				else
+					System.out.println("0");
+				} else// when the button text = "stop"
 				{
-					st.halt = true;
+					st.halt = true;// stop the searching threads
 					stop = false;
-					if (!specificIP)
+					if (!specificIP)// when ipAdressTF is empty
 					{
+						System.out.println("1");
 						searchConfirmBtn.setText("Search");
-					} else
+					} else// when not
 					{
-						searchConfirmBtn.setText("Connect");
-						interruptSearch = true;
+						System.out.println("2");
+						searchConfirmBtn.setText("Invite");
+//						invite = true;
 					}
 
 				}
 			} else// a player has found us, the search button change to "start" to goto the game
 			{
-				TesT2.foundPlayer();
+				Core.foundPlayer(playerNameTF.getText(), otherPlayerName);
 			}
 		} else
 		{
-			interruptSearch = false;
-			specificIP = false;
-			try
-			{
-				DatagramSocket ds = new DatagramSocket();
-				String str = "hinllo wurld";
-				System.out.println("ADDRESS BACK");
-				InetAddress ia = InetAddress.getByName(ipAddressTF.getText());
 
-				DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
-				ds.send(dp);
-				ds.close();
-			} catch (Exception e)
+			if (stop)
 			{
-				// TODO: handle exception
+				st.halt = true;// stop the searching threads
+				stop = false;
+				searchConfirmBtn.setText("Invite");
+
+				System.out.println("a");
+			} else// this and "if(invited)" will both run when a player receive an invitation, but
+					// only this will run when sending the initial invite
+			{
+				System.out.println("b");
+
+//				if (!start)
+				sendInv();
+				wait(500);// delaying the thread launch make the return invite possible after search
+				chainCommands();// run a receiver just after sending an invite
 			}
 
 		}
+
+	}
+
+	void chainCommands()
+	{
+		nThread = new Thread(new NetThread());
+		nThread.start();
+		System.out.println("Starting Thread");
 
 	}
 
@@ -260,11 +340,17 @@ public class ConnectionWindow extends JFrame
 		// TODO Auto-generated method stub
 		if (e.getStateChange() == 1)
 		{
-
+			searchConfirmBtn.setEnabled(false);
+			nThread = new Thread(new NetThread());
+			nThread.start();
+			System.out.println("Starting Thread");
 		}
 
 		else
 		{
+			searchConfirmBtn.setEnabled(true);
+			nThread.stop();
+			System.out.println("Stopping Thread");
 
 		}
 
@@ -295,7 +381,7 @@ public class ConnectionWindow extends JFrame
 				return;
 			if (ipAddressTF.getText().length() > 0)
 			{
-				searchConfirmBtn.setText("Connect");
+				searchConfirmBtn.setText("Invite");
 				specificIP = true;
 			}
 
@@ -314,7 +400,7 @@ public class ConnectionWindow extends JFrame
 				return;
 			if (ipAddressTF.getText().length() > 0)
 			{
-				searchConfirmBtn.setText("Connect");
+				searchConfirmBtn.setText("Invite");
 				specificIP = true;
 			}
 
@@ -332,7 +418,7 @@ public class ConnectionWindow extends JFrame
 				return;
 			if (ipAddressTF.getText().length() > 0)
 			{
-				searchConfirmBtn.setText("Connect");
+				searchConfirmBtn.setText("Invite");
 				specificIP = true;
 			}
 
@@ -343,6 +429,7 @@ public class ConnectionWindow extends JFrame
 			}
 		}
 	};
+	private JTextField playerNameTF;
 
 	/**
 	 * Create the frame.
@@ -356,8 +443,9 @@ public class ConnectionWindow extends JFrame
 	{
 		// start the receiving thread
 
-		Thread nThread = new Thread(new NetThread());
-		nThread.start();
+//		nThread = new Thread(new NetThread());
+//		nThread.start();
+
 		// **************************
 
 		setResizable(false);
@@ -427,10 +515,9 @@ public class ConnectionWindow extends JFrame
 		JLabel placeHolder_1 = new JLabel("   ");
 		panel_2.add(placeHolder_1);
 
-		JCheckBox intercept = new JCheckBox("Intercept ");
+		JCheckBox intercept = new JCheckBox("Open up^");
 		intercept.setToolTipText(
 				"(Used mainly for debugging) it control whether the program will be able to intercept incoming netwok packets");
-		intercept.setSelected(true);
 		intercept.setPreferredSize(new Dimension(90, 15));
 		panel_2.add(intercept);
 		intercept.addItemListener(new ItemListener()
@@ -439,7 +526,7 @@ public class ConnectionWindow extends JFrame
 			@Override
 			public void itemStateChanged(ItemEvent e)
 			{
-
+				interceptEvent(e);
 			}
 		});
 
@@ -447,10 +534,14 @@ public class ConnectionWindow extends JFrame
 		panel.add(panel_1);
 		panel_1.setLayout(new GridLayout(3, 1, 0, 0));
 
-		JLabel placeHolder = new JLabel("   ");
-		panel_1.add(placeHolder);
+		playerNameTF = new JTextField();
+		playerNameTF.setHorizontalAlignment(SwingConstants.CENTER);
+		playerNameTF.setText("anon" + ThreadLocalRandom.current().nextInt(0, 68 + 1));
+		panel_1.add(playerNameTF);
+		playerNameTF.setColumns(10);
 
 		ipAddressTF = new JTextField();
+		ipAddressTF.setHorizontalAlignment(SwingConstants.CENTER);
 		ipAddressTF.setToolTipText("Local ip address, DELETE it if you want to search for other IP address");
 		ipAddressTF.setPreferredSize(new Dimension(120, 40));
 		ipAddressTF.setMargin(new Insets(2, 10, 2, 10));
@@ -460,10 +551,10 @@ public class ConnectionWindow extends JFrame
 		try
 		{
 			ipAddressTF.setText(InetAddress.getLocalHost().getHostAddress());
-		} catch (UnknownHostException e1)
+		} catch (Exception ex1)
 		{
 			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			ex1.printStackTrace();
 		}
 
 		JScrollPane scrollPane_1 = new JScrollPane();

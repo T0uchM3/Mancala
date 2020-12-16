@@ -34,17 +34,13 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 
-public class TesT2
+public class Core
 {
 
 	private static JFrame frame;
-	private JTextField txtPlayerOne;
-	private JTextField txtPlayerTwo;
 	static JLabel midLab;
 	JButton btnDrag;
 	JLabel firstMarker;
@@ -55,7 +51,9 @@ public class TesT2
 	static ConnectionWindow cw;
 	static JButton btnDrop;
 	static ArrayList<JButton> btnList = new ArrayList<JButton>();
-	static TesT2 window;
+	static Core window;
+	static JLabel playerNameLab;
+	static JLabel otherNameLab;
 
 	/**
 	 * Launch the application.
@@ -80,7 +78,7 @@ public class TesT2
 			{
 				try
 				{
-					window = new TesT2();
+					window = new Core();
 					window.frame.setVisible(false);
 					window.frame.setEnabled(false);
 				} catch (Exception e)
@@ -114,11 +112,13 @@ public class TesT2
 		});
 	}
 
-	static void foundPlayer()
+	static void foundPlayer(String playerName, String otherPlayerName)
 	{
 		cw.setVisible(false);
 		window.frame.setVisible(true);
 		window.frame.setEnabled(true);
+		playerNameLab.setText(playerName);
+		otherNameLab.setText(otherPlayerName);
 	}
 
 	/**
@@ -126,7 +126,7 @@ public class TesT2
 	 * 
 	 * @throws IOException
 	 */
-	public TesT2() throws Exception
+	public Core() throws Exception
 	{
 		initialize();
 	}
@@ -138,7 +138,7 @@ public class TesT2
 			DatagramSocket ds = new DatagramSocket();
 			String str = "hello world";
 //			InetAddress ia = InetAddress.getByName("localhost");
-			InetAddress ia = InetAddress.getByName(txtPlayerOne.getText());
+			InetAddress ia = InetAddress.getByName(playerNameLab.getText());
 			DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
 			ds.send(dp);
 			ds.close();
@@ -270,7 +270,6 @@ public class TesT2
 
 		JPanel panel = new JPanel();
 		FlowLayout flowLayout = (FlowLayout) panel.getLayout();
-		flowLayout.setHgap(0);
 		GridBagConstraints gbc_panel = new GridBagConstraints();
 		gbc_panel.insets = new Insets(0, 0, 5, 0);
 		gbc_panel.fill = GridBagConstraints.BOTH;
@@ -278,14 +277,14 @@ public class TesT2
 		gbc_panel.gridy = 0;
 		frame.getContentPane().add(panel, gbc_panel);
 
-		secondMarker = new JLabel(">  ");
+		secondMarker = new JLabel(">");
 		panel.add(secondMarker);
 
-		txtPlayerTwo = new JTextField();
-		txtPlayerTwo.setText("Player Two");
-		txtPlayerTwo.setHorizontalAlignment(SwingConstants.CENTER);
-		panel.add(txtPlayerTwo);
-		txtPlayerTwo.setColumns(10);
+		otherNameLab = new JLabel("New label");
+		panel.add(otherNameLab);
+
+		JLabel firstMarker_2 = new JLabel("< ");
+		panel.add(firstMarker_2);
 //		txtPlayerTwo.addMouseListener(ml);
 //		txtPlayerTwo.setTransferHandler(new TransferHandler("text"));
 
@@ -498,14 +497,14 @@ public class TesT2
 		gbc_panel_4.gridy = 4;
 		frame.getContentPane().add(panel_4, gbc_panel_4);
 
-		firstMarker = new JLabel("> ");
+		firstMarker = new JLabel(">");
 		panel_4.add(firstMarker);
 
-		txtPlayerOne = new JTextField();
-		txtPlayerOne.setHorizontalAlignment(SwingConstants.CENTER);
-		txtPlayerOne.setText("Player One");
-		panel_4.add(txtPlayerOne);
-		txtPlayerOne.setColumns(10);
+		playerNameLab = new JLabel("New label");
+		panel_4.add(playerNameLab);
+
+		JLabel firstMarker_1 = new JLabel("<");
+		panel_4.add(firstMarker_1);
 		frame.setBounds(100, 100, 552, 228);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 //		txtPlayerOne.addMouseListener(ml);
@@ -547,11 +546,11 @@ public class TesT2
 			super.exportDone(source, data, action);
 			// we triggering the number updates from here
 			int dragVal = Integer.parseInt(((JButton) source).getText());
-			int dropVal = Integer.parseInt(TesT2.btnDrop.getText());
+			int dropVal = Integer.parseInt(Core.btnDrop.getText());
 			// we don't go under 0
 			if (dragVal != 0)
-				TesT2.updateValue((dragVal - 1) + "", source.getName(), TesT2.btnDrop.getName(), (dropVal + 1) + "");
-			System.out.println(source.getName() + "  >>>  " + TesT2.btnDrop.getName());
+				Core.updateValue((dragVal - 1) + "", source.getName(), Core.btnDrop.getName(), (dropVal + 1) + "");
+			System.out.println(source.getName() + "  >>>  " + Core.btnDrop.getName());
 		}
 
 	}
@@ -593,7 +592,7 @@ public class TesT2
 						{
 
 //							((JButton) component).setText(value.toString());
-							TesT2.btnDrop = (JButton) component;
+							Core.btnDrop = (JButton) component;
 							System.out.println("Drop target " + component.getName());
 						}
 					}
