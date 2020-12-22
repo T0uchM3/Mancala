@@ -24,7 +24,6 @@ public class SearchThread
 						if (addrs.isReachable(1000))
 						{
 							System.out.println("Available: " + addrs.getHostAddress());
-							ConnectionWindow.availableIps.add(addrs.toString());
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}
@@ -55,7 +54,6 @@ public class SearchThread
 						if (addrs.isReachable(1000))
 						{
 							System.out.println("Available: " + addrs.getHostAddress());
-							ConnectionWindow.availableIps.add(addrs.toString());
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}
@@ -86,7 +84,6 @@ public class SearchThread
 						if (addrs.isReachable(1000))
 						{
 							System.out.println("Available: " + addrs.getHostAddress());
-							ConnectionWindow.availableIps.add(addrs.toString());
 							ConnectionWindow.findPlayer(addrs.toString());
 						}
 						if (halt)
@@ -115,8 +112,6 @@ public class SearchThread
 						if (addrs.isReachable(1000))
 						{
 							System.out.println("Available: " + addrs.getHostAddress());
-							ConnectionWindow.availableIps.add(addrs.toString());
-
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}
@@ -146,8 +141,6 @@ public class SearchThread
 						if (addrs.isReachable(1000))
 						{
 							System.out.println("Available: " + addrs.getHostAddress());
-							ConnectionWindow.availableIps.add(addrs.toString());
-
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}
@@ -177,8 +170,6 @@ public class SearchThread
 						if (addrs.isReachable(1000))
 						{
 							System.out.println("Available: " + addrs.getHostAddress());
-							ConnectionWindow.availableIps.add(addrs.toString());
-
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}
@@ -208,8 +199,6 @@ public class SearchThread
 						if (addrs.isReachable(1000))
 						{
 							System.out.println("Available: " + addrs.getHostAddress());
-
-							ConnectionWindow.availableIps.add(addrs.toString());
 							ConnectionWindow.findPlayer(addrs.toString());
 //							break;
 						}

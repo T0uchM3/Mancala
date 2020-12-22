@@ -42,7 +42,7 @@ public class ConnectionWindow extends JFrame
 	static boolean specificIP = false;
 	static float counter = 0;
 	static ArrayList<String> availableIps = new ArrayList<>();
-	boolean stop = false;
+	static boolean stop = false;
 	static SearchThread st;
 	boolean offline = false;
 	static boolean start = false;
@@ -57,6 +57,7 @@ public class ConnectionWindow extends JFrame
 	Thread nThread;
 	static boolean invited = false;
 	static String otherPlayerName;
+	static String localIp;
 
 	/**
 	 * Launch the application.
@@ -83,7 +84,7 @@ public class ConnectionWindow extends JFrame
 	{
 		try
 		{
-			// don't continue if not connected to wifi
+			// don't continue if not connected to network
 			if (InetAddress.getLocalHost().getHostAddress().equals("127.0.0.1"))
 			{
 				System.out.println("exit " + InetAddress.getLocalHost().getHostAddress());
@@ -100,14 +101,14 @@ public class ConnectionWindow extends JFrame
 			listModel.clear();
 
 			// getting the local IP address
-			String ip = InetAddress.getLocalHost().getHostAddress();
+			localIp = InetAddress.getLocalHost().getHostAddress();
 			String newIp = new String();
 			// changing the address to xxx.xxx.xxx.
-			for (int i = ip.length(); i > 0; i--)
+			for (int i = localIp.length(); i > 0; i--)
 			{
-				if (ip.charAt(i - 1) == '.')
+				if (localIp.charAt(i - 1) == '.')
 				{
-					newIp = ip.substring(0, i);
+					newIp = localIp.substring(0, i);
 					break;
 				}
 			}
@@ -125,6 +126,8 @@ public class ConnectionWindow extends JFrame
 		try
 		{
 			String fixedIp = avIP.substring(1, avIP.length());
+			if (fixedIp.equals(localIp))
+				fixedIp = fixedIp + "      YOU";
 			updateList(fixedIp);
 			if (!fixedIp.equals(InetAddress.getLocalHost().getHostAddress()))// don't go in if it's our IP
 			{
@@ -150,6 +153,7 @@ public class ConnectionWindow extends JFrame
 
 	}
 
+//this for generating the percentage and stuff 
 	static void updateStatus()
 	{
 		counter += 1;
@@ -160,6 +164,7 @@ public class ConnectionWindow extends JFrame
 		{// changing the last "tick" to become "100%" instead of "100.%"
 			statusLab.setText(s.substring(0, 3) + "%");
 			searching = false;
+			stop = false;
 			if (!specificIP)
 				searchConfirmBtn.setText("Search");
 			else
@@ -361,16 +366,22 @@ public class ConnectionWindow extends JFrame
 		listModel.addElement(ip);
 	}
 
+//concerning the GUI ip list
 	void listSelectionEvent(ListSelectionEvent e)
 	{
 		if (!e.getValueIsAdjusting())
 		{
-
-			ipAddressTF.setText(list.getSelectedValue());
+			if (list.getSelectedValue().contains("YOU"))
+				ipAddressTF.setText(list.getSelectedValue().substring(0, list.getSelectedValue().length() - 3).trim());
+			else
+				ipAddressTF.setText(list.getSelectedValue());
 			specificIP = true;
+			if (!stop)
+				searchConfirmBtn.setText("Invite");
 		}
 	}
 
+//this concerning the ip text field 
 	DocumentListener dl = new DocumentListener()
 	{
 
