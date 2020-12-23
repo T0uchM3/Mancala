@@ -3,8 +3,17 @@ package mancala;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
+import javax.swing.SwingUtilities;
+
 public class NetThread implements Runnable
 {
+	boolean fromCore = false;
+	public static String command;
+
+	public NetThread(boolean source)
+	{
+		this.fromCore = source;
+	}
 
 	@Override
 	public void run()
@@ -21,8 +30,31 @@ public class NetThread implements Runnable
 					+ ":" + dp.getPort();
 			String msg = new String(dp.getData(), 0, dp.getLength());
 //			TesT2.updateValueNet(strRecv);
+			if (!fromCore)
+				ConnectionWindow.foundPlayer(dp.getAddress().toString(), msg);
+			else
+			{
+//				command = msg;
+				SwingUtilities.invokeLater(new Runnable()
+				{
 
-			ConnectionWindow.foundPlayer(dp.getAddress().toString(), msg);
+					@Override
+					public void run()
+					{
+						// TODO Auto-generated method stub
+						try
+						{
+							Core.translate(msg);
+						} catch (InterruptedException e)
+						{
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				});
+
+//				Core.bothIn();
+			}
 
 			System.out.println(strRecv);
 			ds.close();

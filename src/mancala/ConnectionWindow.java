@@ -58,6 +58,8 @@ public class ConnectionWindow extends JFrame
 	static boolean invited = false;
 	static String otherPlayerName;
 	static String localIp;
+	static boolean goingFirst = false;
+	static String destinationIp;
 
 	/**
 	 * Launch the application.
@@ -142,7 +144,6 @@ public class ConnectionWindow extends JFrame
 //				DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
 //				ds.send(dp);
 //				ds.close();
-
 			}
 
 		} catch (Exception e)
@@ -191,6 +192,9 @@ public class ConnectionWindow extends JFrame
 //NetThread start this, when it get an invite from other player 
 	static void foundPlayer(String playerIp, String message)
 	{
+		// just removing the slash at the start (weird stuff)
+		destinationIp = playerIp.substring(1, playerIp.length());
+
 		System.out.println("found player");
 //		if (searching)
 //		{
@@ -209,12 +213,14 @@ public class ConnectionWindow extends JFrame
 			statusLab.setText(message + " invited you!");
 			searchConfirmBtn.setText("Accept");
 			otherPlayerName = message;
+			goingFirst = true;
 		}
 
 		invited = true;
 		start = true;
 		try
 		{
+			localIp = InetAddress.getLocalHost().getHostAddress();
 //			wait(1000);
 //			DatagramSocket ds = new DatagramSocket();
 //			String str = "hello baaaaaaack";
@@ -269,11 +275,18 @@ public class ConnectionWindow extends JFrame
 	void searchBtnEvent()
 	{
 
-		if (invited)// when button text = "invite"
+		if (invited)
 		{
 //			sendInv();
 			System.out.println("c");
-			Core.foundPlayer(playerNameTF.getText(), otherPlayerName);
+			if (goingFirst)
+				sendInv();
+			Core.foundPlayer(playerNameTF.getText(), otherPlayerName, goingFirst, localIp, destinationIp);
+			if (!goingFirst)// no reason to move further that this while going in 2nd
+				return;
+
+			// we keep going (bellow) to send back a message to who invited us to inform
+			// them that we're good
 		}
 
 		if (!specificIP)
@@ -302,9 +315,11 @@ public class ConnectionWindow extends JFrame
 					}
 
 				}
-			} else// a player has found us, the search button change to "start" to goto the game
+			} else// this seems unreachable??
+					// a player has found us, the search button change to "start" to goto the game
 			{
-				Core.foundPlayer(playerNameTF.getText(), otherPlayerName);
+				System.out.println("X");
+				Core.foundPlayer(playerNameTF.getText(), otherPlayerName, goingFirst, localIp, destinationIp);
 			}
 		} else
 		{
@@ -322,9 +337,13 @@ public class ConnectionWindow extends JFrame
 				System.out.println("b");
 
 //				if (!start)
-				sendInv();
-				wait(500);// delaying the thread launch make the return invite possible after search
-				chainCommands();// run a receiver just after sending an invite
+				if (!goingFirst)
+				{
+					sendInv();// they invited us, so we inform them of our decision
+					wait(500);// delaying the thread launch make the return invite possible after search
+					chainCommands();// run a receiver just after sending an invite
+				}
+
 			}
 
 		}
@@ -333,12 +352,13 @@ public class ConnectionWindow extends JFrame
 
 	void chainCommands()
 	{
-		nThread = new Thread(new NetThread());
+		nThread = new Thread(new NetThread(false));
 		nThread.start();
 		System.out.println("Starting Thread");
 
 	}
 
+//concern the checkBox
 	void interceptEvent(ItemEvent e)
 	{
 
@@ -346,7 +366,7 @@ public class ConnectionWindow extends JFrame
 		if (e.getStateChange() == 1)
 		{
 			searchConfirmBtn.setEnabled(false);
-			nThread = new Thread(new NetThread());
+			nThread = new Thread(new NetThread(false));
 			nThread.start();
 			System.out.println("Starting Thread");
 		}
