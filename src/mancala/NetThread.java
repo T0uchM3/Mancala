@@ -34,26 +34,22 @@ public class NetThread implements Runnable
 				ConnectionWindow.foundPlayer(dp.getAddress().toString(), msg);
 			else
 			{
-//				command = msg;
-				SwingUtilities.invokeLater(new Runnable()
+				SwingUtilities.invokeLater(new Runnable()// running stuff on main thread!
 				{
 
 					@Override
 					public void run()
 					{
-						// TODO Auto-generated method stub
 						try
 						{
 							Core.translate(msg);
 						} catch (InterruptedException e)
 						{
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}
 				});
 
-//				Core.bothIn();
 			}
 
 			System.out.println(strRecv);

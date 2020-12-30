@@ -546,7 +546,7 @@ public class ConnectionWindow extends JFrame
 		JLabel placeHolder_1 = new JLabel("   ");
 		panel_2.add(placeHolder_1);
 
-		JCheckBox intercept = new JCheckBox("Open up^");
+		JCheckBox intercept = new JCheckBox("Go first!");
 		intercept.setToolTipText(
 				"(Used mainly for debugging) it control whether the program will be able to intercept incoming netwok packets");
 		intercept.setPreferredSize(new Dimension(90, 15));

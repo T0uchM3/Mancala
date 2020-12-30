@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -25,6 +26,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Timer;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -42,12 +44,10 @@ public class Core
 	private static JFrame frame;
 	static JLabel midLab;
 	JButton btnDrag;
-	JLabel firstMarker;
-	JLabel secondMarker;
 	static JButton startBtn;
-	static boolean localPlayerTurn = true;
+	static boolean playable = false;
 	static boolean sender = false;
-	static ConnectionWindow cw;
+	static ConnectionWindow conWin;
 	static JButton btnDrop;
 	static ArrayList<JButton> btnList = new ArrayList<JButton>();
 	static Core window;
@@ -60,6 +60,17 @@ public class Core
 	static String localPlayerName;
 	static boolean bothePlayersInside = false;
 	static Thread nThread;
+	static JLabel arrowDown;
+	static JLabel arrowUp;
+	static JLabel turnInd11;
+	static JLabel turnInd12;
+	static JLabel turnInd13;
+	static JLabel turnInd14;
+	static JLabel turnInd1;
+	static JLabel turnInd2;
+	static JLabel turnInd3;
+	static JLabel turnInd4;
+	static Timer timer;
 
 	/**
 	 * Launch the application.
@@ -122,7 +133,7 @@ public class Core
 	{
 		String command = cmd.substring(0, 3);
 		String context = cmd.substring(3, cmd.length());
-		System.out.println("Translating " + command);
+		System.out.println("///Translating//// " + command);
 		switch (command)
 		{
 		case "001":// inform 1st player that 2nd player connected
@@ -135,11 +146,35 @@ public class Core
 			System.out.println("thread state " + nThread.getState());
 		}
 			break;
-		case "002":// synchronising the midLab
+		case "002":// synchronising the midLab //this will run on second player's side
 		{
 			System.out.println("COMMAND  " + command);
 			System.out.println("CONTEXT  " + context);
 			midLab.setText(context + "'s turn");
+			bothePlayersInside = true;
+
+			wait(500);
+			receiving();
+
+			timer = new Timer();
+			timer.schedule(new BlinkThread(2), 0, 500);
+		}
+			break;
+
+		case "003":// sync values//this will "periodically" be running on both sides
+		{
+			System.out.println("COMMAND  " + command);
+			System.out.println("CONTEXT  " + context);
+
+			innerDistribution(context);
+
+			wait(500);
+			receiving();
+
+			playable = true;
+			timer.cancel();
+			timer = new Timer();
+			timer.schedule(new BlinkThread(1), 0, 500);
 		}
 			break;
 		}
@@ -148,12 +183,12 @@ public class Core
 	// launching the connection window
 	static void openConnectionDialog()
 	{
-		cw = new ConnectionWindow();
+		conWin = new ConnectionWindow();
 
-		cw.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-		cw.setVisible(true);
+		conWin.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		conWin.setVisible(true);
 
-		cw.addWindowListener(new WindowAdapter()
+		conWin.addWindowListener(new WindowAdapter()
 		{
 			@Override
 			public void windowClosing(WindowEvent e)
@@ -164,7 +199,9 @@ public class Core
 		});
 	}
 
-	// first thing that get called when the game start
+	// ********************
+	// *********** first thing that get called when the game start
+	// *******************
 	static void foundPlayer(String playerName, String otherPrName, boolean enteredFirst, String locIp, String destIp)
 	{
 		// this for separating between the old and new logs
@@ -178,12 +215,15 @@ public class Core
 
 		firstInteraction();
 
-		cw.setVisible(false);
+		conWin.setVisible(false);
 		window.frame.setVisible(true);
 		window.frame.setEnabled(true);
 		playerNameLab.setText(playerName);
 		otherNameLab.setText(otherPlayerName);
 
+		// *******blinking effect*****
+		Timer timer2 = new Timer();
+		timer2.schedule(new BlinkThread(0), 0, 1000);
 	}
 
 	static void firstInteraction()
@@ -194,6 +234,10 @@ public class Core
 			midLab.setText(localPlayerName + "'s turn");
 			wait(500);
 			receiving();
+			playable = true;
+
+			timer = new Timer();
+			timer.schedule(new BlinkThread(1), 0, 500);
 
 		} else
 		{
@@ -201,6 +245,7 @@ public class Core
 			sending("001");
 			wait(500);
 			receiving();
+
 		}
 	}
 
@@ -281,6 +326,72 @@ public class Core
 			}
 		}
 	};
+
+	static void innerDistribution(String bName)
+	{
+		JButton seletedBtn = null;
+		// getting object button from a name
+		for (int u = 0; u < btnList.size(); u++)
+		{
+			if (btnList.get(u).getName().equals(bName))
+			{
+				seletedBtn = btnList.get(u);
+			}
+		}
+//*************
+		System.out.println("CURRENT BTN NUM:: " + seletedBtn.getName().substring(3, seletedBtn.getName().length()));
+		int amount = Integer.parseInt(seletedBtn.getText());
+		int val = Integer.parseInt(seletedBtn.getName().substring(3, seletedBtn.getName().length()));
+
+		seletedBtn.setText("0");
+		for (int i = amount; i > 0; i--)
+		{
+			if (val == 12)
+				val = 1;
+			else
+				val++;
+
+			String newPosName = "btn" + val;
+			if (newPosName.equals(seletedBtn.getName()))
+			{
+				val++;
+				newPosName = "btn" + val;
+			}
+
+//				System.out.println("OOOOMPA LOOMMMMPAAAA");
+
+			System.out.println(newPosName + "  " + seletedBtn.getName());
+
+			for (int j = 0; j < btnList.size(); j++)
+			{
+				if (btnList.get(j).getName().equals(newPosName))
+				{
+					btnList.get(j).setText((Integer.parseInt(btnList.get(j).getText()) + 1) + "");
+				}
+			}
+		}
+
+	}
+
+	void distribution(MouseEvent e)
+	{
+		JButton jc = (JButton) e.getSource();
+		if (jc.getName() == "btn7" || jc.getName() == "btn8" || jc.getName() == "btn9" || jc.getName() == "btn10"
+				|| jc.getName() == "btn11" || jc.getName() == "btn12")
+			return;
+		System.out.println("*****CURRENT PLAYER PLAYED HIS TURN*******  " + localPlayerName);
+
+		innerDistribution(jc.getName());
+		sending("003" + "btn" + (Integer.parseInt(jc.getName().substring(3, jc.getName().length())) + 6));
+		playable = false;
+		timer.cancel();
+		timer = new Timer();
+		timer.schedule(new BlinkThread(2), 0, 500);
+
+		wait(500);
+		receiving();
+	}
+
 	MouseListener ml = new MouseListener()
 	{
 
@@ -288,14 +399,18 @@ public class Core
 		public void mouseReleased(MouseEvent e)
 		{
 			// TODO Auto-generated method stub
-
 		}
 
 		@Override
 		public void mousePressed(MouseEvent e)
 		{
 			// TODO Auto-generated method stub
+			if (!playable)// this so the 2nd player won't touch anything when they start
+				return;
+			if (!bothePlayersInside)// this so the 1st player won't start playing till the 2nd player connect
+				return;
 
+			distribution(e);
 		}
 
 		@Override
@@ -355,20 +470,36 @@ public class Core
 		gbc_panel.gridy = 0;
 		frame.getContentPane().add(panel, gbc_panel);
 
-		secondMarker = new JLabel(">");
-		panel.add(secondMarker);
+		turnInd1 = new JLabel(">");
+		turnInd1.setForeground(Color.WHITE);
+		turnInd1.setFont(new Font("Tahoma", Font.BOLD, 11));
+		panel.add(turnInd1);
+
+		turnInd2 = new JLabel(">");
+		turnInd2.setForeground(Color.WHITE);
+		turnInd2.setFont(new Font("Tahoma", Font.BOLD, 11));
+		panel.add(turnInd2);
 
 		otherNameLab = new JLabel("New label");
+		otherNameLab.setFont(new Font("Tahoma", Font.BOLD, 12));
 		panel.add(otherNameLab);
 
-		JLabel firstMarker_2 = new JLabel("< ");
-		panel.add(firstMarker_2);
+		turnInd3 = new JLabel("< ");
+		turnInd3.setForeground(Color.WHITE);
+		turnInd3.setFont(new Font("Tahoma", Font.BOLD, 11));
+		panel.add(turnInd3);
+
+		turnInd4 = new JLabel("< ");
+		turnInd4.setForeground(Color.WHITE);
+		turnInd4.setFont(new Font("Tahoma", Font.BOLD, 11));
+		panel.add(turnInd4);
 //		txtPlayerTwo.addMouseListener(ml);
 //		txtPlayerTwo.setTransferHandler(new TransferHandler("text"));
 
 		JPanel panel_1 = new JPanel();
+		panel_1.setAlignmentY(Component.TOP_ALIGNMENT);
 		panel_1.setBorder(UIManager.getBorder("CheckBox.border"));
-		panel_1.setBackground(UIManager.getColor("CheckBox.darkShadow"));
+		panel_1.setBackground(new Color(128, 0, 0));
 		GridBagConstraints gbc_panel_1 = new GridBagConstraints();
 		gbc_panel_1.ipadx = 1;
 		gbc_panel_1.weighty = 5.0;
@@ -378,16 +509,6 @@ public class Core
 		gbc_panel_1.gridy = 1;
 		frame.getContentPane().add(panel_1, gbc_panel_1);
 		panel_1.setLayout(new GridLayout(0, 6, 2, 0));
-		JButton btn11 = new JButton("5");
-		btn11.setBorderPainted(false);
-		btn11.setBackground(new Color(245, 245, 245));
-		panel_1.add(btn11);
-		btn11.setName("btn11");
-		btnList.add(btn11);
-		btn11.addMouseMotionListener(mml);
-		btn11.addMouseListener(ml);
-		btn11.setTransferHandler(new ValueExportTransferHandler(""));
-//		btn11.setTransferHandler(new ValueImportTransferHandler());
 
 		JButton btn12 = new JButton("5");
 		btn12.setBorderPainted(false);
@@ -395,50 +516,60 @@ public class Core
 		panel_1.add(btn12);
 		btn12.setName("btn12");
 		btnList.add(btn12);
-		btn12.addMouseMotionListener(mml);
+//		btn12.addMouseMotionListener(mml);
 		btn12.addMouseListener(ml);
-		btn12.setTransferHandler(new ValueExportTransferHandler(""));
-//		btn12.setTransferHandler(new ValueImportTransferHandler());
+//		btn12.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn13 = new JButton("5");
-		btn13.setBorderPainted(false);
-		btn13.setBackground(new Color(245, 245, 245));
-		panel_1.add(btn13);
-		btn13.setName("btn13");
-		btnList.add(btn13);
-		btn13.addMouseMotionListener(mml);
-		btn13.addMouseListener(ml);
-		btn13.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn11 = new JButton("5");
+		btn11.setBorderPainted(false);
+		btn11.setBackground(new Color(245, 245, 245));
+		panel_1.add(btn11);
+		btn11.setName("btn11");
+		btnList.add(btn11);
+//		btn11.addMouseMotionListener(mml);
+		btn11.addMouseListener(ml);
+//		btn11.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn14 = new JButton("5");
-		btn14.setBorderPainted(false);
-		btn14.setBackground(new Color(245, 245, 245));
-		panel_1.add(btn14);
-		btn14.setName("btn14");
-		btnList.add(btn14);
-		btn14.addMouseMotionListener(mml);
-		btn14.addMouseListener(ml);
-		btn14.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn10 = new JButton("5");
+		btn10.setBorderPainted(false);
+		btn10.setBackground(new Color(245, 245, 245));
+		panel_1.add(btn10);
+		btn10.setName("btn10");
+		btnList.add(btn10);
+//		btn10.addMouseMotionListener(mml);
+		btn10.addMouseListener(ml);
+//		btn10.setTransferHandler(new ValueExportTransferHandler(""));
+		// btn8.setTransferHandler(new ValueImportTransferHandler());
 
-		JButton btn15 = new JButton("5");
-		btn15.setBorderPainted(false);
-		btn15.setBackground(new Color(245, 245, 245));
-		panel_1.add(btn15);
-		btn15.setName("btn15");
-		btnList.add(btn15);
-		btn15.addMouseMotionListener(mml);
-		btn15.addMouseListener(ml);
-		btn15.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn9 = new JButton("5");
+		btn9.setBorderPainted(false);
+		btn9.setBackground(new Color(245, 245, 245));
+		panel_1.add(btn9);
+		btn9.setName("btn9");
+		btnList.add(btn9);
+//		btn9.addMouseMotionListener(mml);
+		btn9.addMouseListener(ml);
+//		btn9.setTransferHandler(new ValueExportTransferHandler(""));
+		// btn7.setTransferHandler(new ValueImportTransferHandler());
 
-		JButton btn16 = new JButton("5");
-		btn16.setBorderPainted(false);
-		btn16.setBackground(new Color(245, 245, 245));
-		panel_1.add(btn16);
-		btn16.setName("btn16");
-		btnList.add(btn16);
-		btn16.addMouseMotionListener(mml);
-		btn16.addMouseListener(ml);
-		btn16.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn8 = new JButton("5");
+		btn8.setBorderPainted(false);
+		btn8.setBackground(new Color(245, 245, 245));
+		panel_1.add(btn8);
+		btn8.setName("btn8");
+		btnList.add(btn8);
+//		btn8.addMouseMotionListener(mml);
+		btn8.addMouseListener(ml);
+//		btn8.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn7 = new JButton("5");
+		btn7.setBorderPainted(false);
+		btn7.setBackground(new Color(245, 245, 245));
+		panel_1.add(btn7);
+		btn7.setName("btn7");
+		btnList.add(btn7);
+//		btn7.addMouseMotionListener(mml);
+		btn7.addMouseListener(ml);
+//		btn7.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JPanel panel_2 = new JPanel();
 		panel_2.setBackground(new Color(255, 255, 255));
@@ -451,6 +582,17 @@ public class Core
 
 		JButton btnNewButton = new JButton("Rock");
 		btnNewButton.setVisible(false);
+
+		JPanel panel_6 = new JPanel();
+		panel_6.setBorder(UIManager.getBorder("CheckBox.border"));
+		panel_2.add(panel_6);
+
+		arrowDown = new JLabel("\u02C5");
+		arrowDown.setFont(new Font("Tahoma", Font.BOLD, 13));
+		panel_6.add(arrowDown);
+
+		JLabel emptySpace = new JLabel("                                                                  ");
+		panel_2.add(emptySpace);
 		panel_2.add(btnNewButton);
 		btnNewButton.addActionListener(new ActionListener()
 		{
@@ -474,6 +616,17 @@ public class Core
 		startBtn.setBorder(UIManager.getBorder("CheckBox.border"));
 		startBtn.setEnabled(true);
 		panel_2.add(startBtn);
+
+		JLabel emptSpace = new JLabel("                                                             ");
+		panel_2.add(emptSpace);
+
+		JPanel panel_5 = new JPanel();
+		panel_5.setBorder(UIManager.getBorder("CheckBox.border"));
+		panel_2.add(panel_5);
+
+		arrowUp = new JLabel("\u02C4");
+		arrowUp.setFont(new Font("Tahoma", Font.BOLD, 13));
+		panel_5.add(arrowUp);
 		startBtn.addActionListener(new ActionListener()
 		{
 
@@ -526,7 +679,7 @@ public class Core
 //		lblNewLabel.setTransferHandler(new ValueExportTransferHandler(Integer.toString(index + 1)));
 
 		JPanel panel_3 = new JPanel();
-		panel_3.setBackground(UIManager.getColor("CheckBox.darkShadow"));
+		panel_3.setBackground(new Color(128, 0, 0));
 		panel_3.setBorder(UIManager.getBorder("RadioButton.border"));
 		GridBagConstraints gbc_panel_3 = new GridBagConstraints();
 		gbc_panel_3.ipadx = 1;
@@ -538,66 +691,66 @@ public class Core
 		frame.getContentPane().add(panel_3, gbc_panel_3);
 		panel_3.setLayout(new GridLayout(0, 6, 2, 0));
 
-		JButton btn01 = new JButton("5");
-		btn01.setBorderPainted(false);
-		btn01.setBackground(new Color(245, 245, 245));
-		panel_3.add(btn01);
-		btn01.setName("btn01");
-		btnList.add(btn01);
+		JButton btn1 = new JButton("5");
+		btn1.setBorderPainted(false);
+		btn1.setBackground(new Color(245, 245, 245));
+		panel_3.add(btn1);
+		btn1.setName("btn1");
+		btnList.add(btn1);
 
-		btn01.addMouseMotionListener(mml);
-		btn01.addMouseListener(ml);
-		btn01.setTransferHandler(new ValueExportTransferHandler(""));
+//		btn1.addMouseMotionListener(mml);
+		btn1.addMouseListener(ml);
+//		btn1.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn02 = new JButton("5");
-		btn02.setBorderPainted(false);
-		btn02.setBackground(new Color(245, 245, 245));
-		panel_3.add(btn02);
-		btn02.setName("btn02");
-		btnList.add(btn02);
-		btn02.addMouseMotionListener(mml);
-		btn02.addMouseListener(ml);
-		btn02.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn2 = new JButton("5");
+		btn2.setBorderPainted(false);
+		btn2.setBackground(new Color(245, 245, 245));
+		panel_3.add(btn2);
+		btn2.setName("btn2");
+		btnList.add(btn2);
+//		btn2.addMouseMotionListener(mml);
+		btn2.addMouseListener(ml);
+//		btn2.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn03 = new JButton("5");
-		btn03.setBorderPainted(false);
-		btn03.setBackground(new Color(245, 245, 245));
-		panel_3.add(btn03);
-		btn03.setName("btn03");
-		btnList.add(btn03);
-		btn03.addMouseMotionListener(mml);
-		btn03.addMouseListener(ml);
-		btn03.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn3 = new JButton("5");
+		btn3.setBorderPainted(false);
+		btn3.setBackground(new Color(245, 245, 245));
+		panel_3.add(btn3);
+		btn3.setName("btn3");
+		btnList.add(btn3);
+//		btn3.addMouseMotionListener(mml);
+		btn3.addMouseListener(ml);
+//		btn3.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn04 = new JButton("5");
-		btn04.setBorderPainted(false);
-		btn04.setBackground(new Color(245, 245, 245));
-		panel_3.add(btn04);
-		btn04.setName("btn04");
-		btnList.add(btn04);
-		btn04.addMouseMotionListener(mml);
-		btn04.addMouseListener(ml);
-		btn04.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn4 = new JButton("5");
+		btn4.setBorderPainted(false);
+		btn4.setBackground(new Color(245, 245, 245));
+		panel_3.add(btn4);
+		btn4.setName("btn4");
+		btnList.add(btn4);
+//		btn4.addMouseMotionListener(mml);
+		btn4.addMouseListener(ml);
+//		btn4.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn05 = new JButton("5");
-		btn05.setBorderPainted(false);
-		btn05.setBackground(new Color(245, 245, 245));
-		panel_3.add(btn05);
-		btn05.setName("btn05");
-		btnList.add(btn05);
-		btn05.addMouseMotionListener(mml);
-		btn05.addMouseListener(ml);
-		btn05.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn5 = new JButton("5");
+		btn5.setBorderPainted(false);
+		btn5.setBackground(new Color(245, 245, 245));
+		panel_3.add(btn5);
+		btn5.setName("btn5");
+		btnList.add(btn5);
+//		btn5.addMouseMotionListener(mml);
+		btn5.addMouseListener(ml);
+//		btn5.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn06 = new JButton("5");
-		btn06.setBorderPainted(false);
-		btn06.setBackground(new Color(245, 245, 245));
-		panel_3.add(btn06);
-		btn06.setName("btn06");
-		btnList.add(btn06);
-		btn06.addMouseMotionListener(mml);
-		btn06.addMouseListener(ml);
-		btn06.setTransferHandler(new ValueExportTransferHandler(""));
+		JButton btn6 = new JButton("5");
+		btn6.setBorderPainted(false);
+		btn6.setBackground(new Color(245, 245, 245));
+		panel_3.add(btn6);
+		btn6.setName("btn6");
+		btnList.add(btn6);
+//		btn6.addMouseMotionListener(mml);
+		btn6.addMouseListener(ml);
+//		btn6.setTransferHandler(new ValueExportTransferHandler(""));
 
 		JPanel panel_4 = new JPanel();
 		panel_4.setBackground(new Color(255, 255, 255));
@@ -607,14 +760,29 @@ public class Core
 		gbc_panel_4.gridy = 4;
 		frame.getContentPane().add(panel_4, gbc_panel_4);
 
-		firstMarker = new JLabel(">");
-		panel_4.add(firstMarker);
+		turnInd11 = new JLabel(">");
+		turnInd11.setForeground(Color.WHITE);
+		turnInd11.setFont(new Font("Tahoma", Font.BOLD, 11));
+		panel_4.add(turnInd11);
+
+		turnInd12 = new JLabel(">");
+		turnInd12.setForeground(Color.WHITE);
+		turnInd12.setFont(new Font("Tahoma", Font.BOLD, 11));
+		panel_4.add(turnInd12);
 
 		playerNameLab = new JLabel("New label");
+		playerNameLab.setFont(new Font("Tahoma", Font.BOLD, 12));
 		panel_4.add(playerNameLab);
 
-		JLabel firstMarker_1 = new JLabel("<");
-		panel_4.add(firstMarker_1);
+		turnInd13 = new JLabel("<");
+		turnInd13.setForeground(Color.WHITE);
+		turnInd13.setFont(new Font("Tahoma", Font.BOLD, 11));
+		panel_4.add(turnInd13);
+
+		turnInd14 = new JLabel("<");
+		turnInd14.setForeground(Color.WHITE);
+		turnInd14.setFont(new Font("Tahoma", Font.BOLD, 11));
+		panel_4.add(turnInd14);
 		frame.setBounds(100, 100, 552, 228);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 //		txtPlayerOne.addMouseListener(ml);
