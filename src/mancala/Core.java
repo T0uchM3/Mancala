@@ -13,8 +13,6 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.DnDConstants;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -42,17 +40,13 @@ public class Core
 {
 
 	private static JFrame frame;
-	static JLabel midLab;
 	JButton btnDrag;
-	static JButton startBtn;
 	static boolean playable = false;
 	static boolean sender = false;
 	static ConnectionWindow conWin;
 	static JButton btnDrop;
 	static ArrayList<JButton> btnList = new ArrayList<JButton>();
 	static Core window;
-	static JLabel playerNameLab;
-	static JLabel otherNameLab;
 	static boolean inFirst = false;
 	static String otherPlayerIp;
 	static String localPlayerIp;
@@ -60,17 +54,23 @@ public class Core
 	static String localPlayerName;
 	static boolean bothePlayersInside = false;
 	static Thread nThread;
-	static JLabel arrowDown;
-	static JLabel arrowUp;
 	static JLabel turnInd11;
 	static JLabel turnInd12;
 	static JLabel turnInd13;
 	static JLabel turnInd14;
+	static Timer timer;
+	static JLabel playerNameLab;
 	static JLabel turnInd1;
 	static JLabel turnInd2;
 	static JLabel turnInd3;
 	static JLabel turnInd4;
-	static Timer timer;
+	static JLabel otherNameLab;
+	static JLabel otherNameScore;
+	static JLabel localScore;
+	static JLabel otherScore;
+	static JLabel midLab;
+	static JLabel arrowDown;
+	static JLabel arrowUp;
 
 	/**
 	 * Launch the application.
@@ -133,6 +133,7 @@ public class Core
 	{
 		String command = cmd.substring(0, 3);
 		String context = cmd.substring(3, cmd.length());
+
 		System.out.println("///Translating//// " + command);
 		switch (command)
 		{
@@ -140,6 +141,7 @@ public class Core
 		{
 			System.out.println("SWITCH" + cmd);
 			bothePlayersInside = true;
+			midLab.setText("Your turn");
 			nThread.stop();
 			wait(1000);
 			sending("002" + localPlayerName);
@@ -165,9 +167,13 @@ public class Core
 		{
 			System.out.println("COMMAND  " + command);
 			System.out.println("CONTEXT  " + context);
-
-			innerDistribution(context);
-
+			int hashPos = context.indexOf('#');
+			String score = context.substring(hashPos + 1, context.length());
+//			System.out.println("SCORE " + score);
+//			System.out.println(" new CONTEXT  " + context.substring(0, hashPos));
+			otherScore.setText(score);
+			innerDistribution(context.substring(0, hashPos));
+			midLab.setText("Your turn");
 			wait(500);
 			receiving();
 
@@ -220,6 +226,7 @@ public class Core
 		window.frame.setEnabled(true);
 		playerNameLab.setText(playerName);
 		otherNameLab.setText(otherPlayerName);
+		otherNameScore.setText(otherPlayerName + "'s score: ");
 
 		// *******blinking effect*****
 		Timer timer2 = new Timer();
@@ -231,7 +238,7 @@ public class Core
 		if (inFirst)
 		{
 			System.out.println("First Player In");
-			midLab.setText(localPlayerName + "'s turn");
+			midLab.setText("Waiting for " + otherPlayerName + " to connect");
 			wait(500);
 			receiving();
 			playable = true;
@@ -287,11 +294,6 @@ public class Core
 		}
 	}
 
-	void turnManagment()
-	{
-
-	}
-
 	MouseMotionListener mml = new MouseMotionListener()
 	{
 
@@ -344,7 +346,7 @@ public class Core
 		int val = Integer.parseInt(seletedBtn.getName().substring(3, seletedBtn.getName().length()));
 
 		seletedBtn.setText("0");
-		for (int i = amount; i > 0; i--)
+		for (int i = amount; i > 0; i--)// if the button contain 6, this will run 6 times
 		{
 			if (val == 12)
 				val = 1;
@@ -352,13 +354,13 @@ public class Core
 				val++;
 
 			String newPosName = "btn" + val;
-			if (newPosName.equals(seletedBtn.getName()))
+			if (newPosName.equals(seletedBtn.getName()))// this for skipping the initial button
 			{
 				val++;
 				newPosName = "btn" + val;
 			}
 
-//				System.out.println("OOOOMPA LOOMMMMPAAAA");
+//			System.out.println("PAAAAA " + amount + " " + i);
 
 			System.out.println(newPosName + "  " + seletedBtn.getName());
 
@@ -367,10 +369,62 @@ public class Core
 				if (btnList.get(j).getName().equals(newPosName))
 				{
 					btnList.get(j).setText((Integer.parseInt(btnList.get(j).getText()) + 1) + "");
+//					System.out.println("LOOMMM " + btnList.get(j).getText());
+					if (playable)
+					{// if it is our turn
+						if (i == 1)// and if we are on the last iteration (last button)
+							// and if the final button is on the other side
+							if (sideCheck(btnList.get(j)))
+
+								scoreCounting(btnList.get(j));// count the score
+					} else// if not our turn
+					{// just do the score (no side check)
+						if (i == 1)
+							scoreCounting(btnList.get(j));// count the score
+					}
+
 				}
 			}
 		}
 
+	}
+
+	static boolean sideCheck(JButton btnToCheck)
+	{
+		if (btnToCheck.getName() == "btn7" || btnToCheck.getName() == "btn8" || btnToCheck.getName() == "btn9"
+				|| btnToCheck.getName() == "btn10" || btnToCheck.getName() == "btn11"
+				|| btnToCheck.getName() == "btn12")
+			return true;
+		else
+			return false;
+	}
+
+//we get the last button, if it contains 2 or 3 we check the one behind it and so on...
+	static void scoreCounting(JButton lastBtn)
+	{// if it is our turn and the button we currently checking is on our side
+		if (playable && !sideCheck(lastBtn))
+			return;
+		// if it is NOT our turn and the button we currently checking in on the other
+		// side
+		if (!playable && sideCheck(lastBtn))
+			return;
+		if (lastBtn.getText().equals("2") || lastBtn.getText().equals("3"))
+		{
+			int newScore = (Integer.parseInt(localScore.getText())) + (Integer.parseInt(lastBtn.getText()));
+			if (playable)// we don't want to calculate the score when it's not our turn
+				localScore.setText(newScore + "");
+			lastBtn.setText("0");
+			int val = Integer.parseInt(lastBtn.getName().substring(3, lastBtn.getName().length()));
+			val--;
+			for (int ii = 0; ii < btnList.size(); ii++)
+			{
+				if (btnList.get(ii).getName().equals("btn" + val))
+				{
+					scoreCounting(btnList.get(ii)); // recursion yey!!
+				}
+			}
+		} else
+			return;
 	}
 
 	void distribution(MouseEvent e)
@@ -378,12 +432,16 @@ public class Core
 		JButton jc = (JButton) e.getSource();
 		if (jc.getName() == "btn7" || jc.getName() == "btn8" || jc.getName() == "btn9" || jc.getName() == "btn10"
 				|| jc.getName() == "btn11" || jc.getName() == "btn12")
-			return;
+			return;// nothing happen if clicked on opponent's buttons
 		System.out.println("*****CURRENT PLAYER PLAYED HIS TURN*******  " + localPlayerName);
 
 		innerDistribution(jc.getName());
-		sending("003" + "btn" + (Integer.parseInt(jc.getName().substring(3, jc.getName().length())) + 6));
+
+		// at this point, the turn ended and the score got calculated
+		sending("003" + "btn" + (Integer.parseInt(jc.getName().substring(3, jc.getName().length())) + 6) + "#"
+				+ localScore.getText());
 		playable = false;
+		midLab.setText(otherPlayerName + "'s turn");
 		timer.cancel();
 		timer = new Timer();
 		timer.schedule(new BlinkThread(2), 0, 500);
@@ -404,12 +462,13 @@ public class Core
 		@Override
 		public void mousePressed(MouseEvent e)
 		{
-			// TODO Auto-generated method stub
 			if (!playable)// this so the 2nd player won't touch anything when they start
 				return;
 			if (!bothePlayersInside)// this so the 1st player won't start playing till the 2nd player connect
 				return;
-
+			JButton btn = (JButton) e.getSource();
+			if (btn.getText() == "0")// nothing happens if clicked on an empty button
+				return;
 			distribution(e);
 		}
 
@@ -462,37 +521,57 @@ public class Core
 
 		JPanel panel = new JPanel();
 		panel.setBackground(new Color(255, 255, 255));
-		FlowLayout flowLayout = (FlowLayout) panel.getLayout();
 		GridBagConstraints gbc_panel = new GridBagConstraints();
 		gbc_panel.insets = new Insets(0, 0, 5, 0);
 		gbc_panel.fill = GridBagConstraints.BOTH;
 		gbc_panel.gridx = 0;
 		gbc_panel.gridy = 0;
 		frame.getContentPane().add(panel, gbc_panel);
+		panel.setLayout(new GridLayout(0, 3, 0, 0));
+
+		JPanel panel_9_1 = new JPanel();
+		FlowLayout flowLayout = (FlowLayout) panel_9_1.getLayout();
+		flowLayout.setAlignment(FlowLayout.LEFT);
+		panel_9_1.setBackground(new Color(255, 228, 225));
+		panel.add(panel_9_1);
+
+		otherNameScore = new JLabel("XYZ score: ");
+		panel_9_1.add(otherNameScore);
+
+		otherScore = new JLabel("0");
+		panel_9_1.add(otherScore);
+
+		JPanel panel_8 = new JPanel();
+		panel_8.setBackground(new Color(255, 228, 225));
+		panel.add(panel_8);
 
 		turnInd1 = new JLabel(">");
 		turnInd1.setForeground(Color.WHITE);
 		turnInd1.setFont(new Font("Tahoma", Font.BOLD, 11));
-		panel.add(turnInd1);
+		panel_8.add(turnInd1);
 
 		turnInd2 = new JLabel(">");
 		turnInd2.setForeground(Color.WHITE);
 		turnInd2.setFont(new Font("Tahoma", Font.BOLD, 11));
-		panel.add(turnInd2);
+		panel_8.add(turnInd2);
 
 		otherNameLab = new JLabel("New label");
 		otherNameLab.setFont(new Font("Tahoma", Font.BOLD, 12));
-		panel.add(otherNameLab);
+		panel_8.add(otherNameLab);
 
 		turnInd3 = new JLabel("< ");
 		turnInd3.setForeground(Color.WHITE);
 		turnInd3.setFont(new Font("Tahoma", Font.BOLD, 11));
-		panel.add(turnInd3);
+		panel_8.add(turnInd3);
 
 		turnInd4 = new JLabel("< ");
 		turnInd4.setForeground(Color.WHITE);
 		turnInd4.setFont(new Font("Tahoma", Font.BOLD, 11));
-		panel.add(turnInd4);
+		panel_8.add(turnInd4);
+
+		JPanel panel_10_1 = new JPanel();
+		panel_10_1.setBackground(new Color(255, 228, 225));
+		panel.add(panel_10_1);
 //		txtPlayerTwo.addMouseListener(ml);
 //		txtPlayerTwo.setTransferHandler(new TransferHandler("text"));
 
@@ -510,7 +589,7 @@ public class Core
 		frame.getContentPane().add(panel_1, gbc_panel_1);
 		panel_1.setLayout(new GridLayout(0, 6, 2, 0));
 
-		JButton btn12 = new JButton("5");
+		JButton btn12 = new JButton("4");
 		btn12.setBorderPainted(false);
 		btn12.setBackground(new Color(245, 245, 245));
 		panel_1.add(btn12);
@@ -520,7 +599,7 @@ public class Core
 		btn12.addMouseListener(ml);
 //		btn12.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn11 = new JButton("5");
+		JButton btn11 = new JButton("4");
 		btn11.setBorderPainted(false);
 		btn11.setBackground(new Color(245, 245, 245));
 		panel_1.add(btn11);
@@ -530,7 +609,7 @@ public class Core
 		btn11.addMouseListener(ml);
 //		btn11.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn10 = new JButton("5");
+		JButton btn10 = new JButton("4");
 		btn10.setBorderPainted(false);
 		btn10.setBackground(new Color(245, 245, 245));
 		panel_1.add(btn10);
@@ -541,7 +620,7 @@ public class Core
 //		btn10.setTransferHandler(new ValueExportTransferHandler(""));
 		// btn8.setTransferHandler(new ValueImportTransferHandler());
 
-		JButton btn9 = new JButton("5");
+		JButton btn9 = new JButton("4");
 		btn9.setBorderPainted(false);
 		btn9.setBackground(new Color(245, 245, 245));
 		panel_1.add(btn9);
@@ -552,7 +631,7 @@ public class Core
 //		btn9.setTransferHandler(new ValueExportTransferHandler(""));
 		// btn7.setTransferHandler(new ValueImportTransferHandler());
 
-		JButton btn8 = new JButton("5");
+		JButton btn8 = new JButton("4");
 		btn8.setBorderPainted(false);
 		btn8.setBackground(new Color(245, 245, 245));
 		panel_1.add(btn8);
@@ -561,7 +640,7 @@ public class Core
 //		btn8.addMouseMotionListener(mml);
 		btn8.addMouseListener(ml);
 //		btn8.setTransferHandler(new ValueExportTransferHandler(""));
-		JButton btn7 = new JButton("5");
+		JButton btn7 = new JButton("4");
 		btn7.setBorderPainted(false);
 		btn7.setBackground(new Color(245, 245, 245));
 		panel_1.add(btn7);
@@ -579,90 +658,46 @@ public class Core
 		gbc_panel_2.gridx = 0;
 		gbc_panel_2.gridy = 2;
 		frame.getContentPane().add(panel_2, gbc_panel_2);
+		panel_2.setLayout(new GridLayout(0, 3, 0, 0));
 
-		JButton btnNewButton = new JButton("Rock");
-		btnNewButton.setVisible(false);
+		JPanel panel_11 = new JPanel();
+		panel_11.setOpaque(false);
+		FlowLayout flowLayout_2 = (FlowLayout) panel_11.getLayout();
+		flowLayout_2.setAlignment(FlowLayout.LEFT);
+		panel_2.add(panel_11);
 
 		JPanel panel_6 = new JPanel();
 		panel_6.setBorder(UIManager.getBorder("CheckBox.border"));
-		panel_2.add(panel_6);
+		panel_11.add(panel_6);
 
 		arrowDown = new JLabel("\u02C5");
 		arrowDown.setFont(new Font("Tahoma", Font.BOLD, 13));
 		panel_6.add(arrowDown);
-
-		JLabel emptySpace = new JLabel("                                                                  ");
-		panel_2.add(emptySpace);
-		panel_2.add(btnNewButton);
-		btnNewButton.addActionListener(new ActionListener()
-		{
-
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				Thread nThread = new Thread(new NetThread(true));
-				nThread.start();
-			}
-		});
-
-		midLab = new JLabel("Who go first?");
-		panel_2.add(midLab);
-		midLab.setTransferHandler(new ValueImportTransferHandler());
 		ButtonGroup bg = new ButtonGroup();
 
-		startBtn = new JButton("Roll");
-		startBtn.setVisible(false);
-		startBtn.setBackground(new Color(224, 255, 255));
-		startBtn.setBorder(UIManager.getBorder("CheckBox.border"));
-		startBtn.setEnabled(true);
-		panel_2.add(startBtn);
+		JPanel panel_13 = new JPanel();
+		panel_13.setOpaque(false);
+		FlowLayout flowLayout_4 = (FlowLayout) panel_13.getLayout();
+		flowLayout_4.setHgap(3);
+		flowLayout_4.setVgap(12);
+		panel_2.add(panel_13);
 
-		JLabel emptSpace = new JLabel("                                                             ");
-		panel_2.add(emptSpace);
+		midLab = new JLabel("Who go first?");
+		panel_13.add(midLab);
+
+		JPanel panel_12 = new JPanel();
+		panel_12.setOpaque(false);
+		FlowLayout flowLayout_3 = (FlowLayout) panel_12.getLayout();
+		flowLayout_3.setAlignment(FlowLayout.RIGHT);
+		panel_2.add(panel_12);
 
 		JPanel panel_5 = new JPanel();
 		panel_5.setBorder(UIManager.getBorder("CheckBox.border"));
-		panel_2.add(panel_5);
+		panel_12.add(panel_5);
 
 		arrowUp = new JLabel("\u02C4");
 		arrowUp.setFont(new Font("Tahoma", Font.BOLD, 13));
 		panel_5.add(arrowUp);
-		startBtn.addActionListener(new ActionListener()
-		{
-
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-
-				System.out.println("Thread state::: " + nThread.getState());
-				sending("002");
-
-//				// random selecting who go first
-//				if ((Math.random() < 0.5) == false)
-//				{
-//					localPlayerTurn = false;
-//					midLab.setText(otherPlayerName + "'s turn");
-//				} else
-//				{
-//					localPlayerTurn = true;
-//					midLab.setText(localPlayerName + "'s turn");
-//				}
-
-//				try
-//				{
-//					DatagramSocket ds = new DatagramSocket();
-//					String str;
-//					InetAddress ia = InetAddress.getByName(otherPlayerIp);
-//					str = "002";
-//					DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
-//					ds.send(dp);
-//					ds.close();
-//				} catch (Exception exx)
-//				{
-//					// TODO: handle exception
-//				}
-			}
-		});
 		/************************** NETWORK **************************/
 
 //		DatagramSocket ds = new DatagramSocket(3000);
@@ -691,7 +726,7 @@ public class Core
 		frame.getContentPane().add(panel_3, gbc_panel_3);
 		panel_3.setLayout(new GridLayout(0, 6, 2, 0));
 
-		JButton btn1 = new JButton("5");
+		JButton btn1 = new JButton("4");
 		btn1.setBorderPainted(false);
 		btn1.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn1);
@@ -702,7 +737,7 @@ public class Core
 		btn1.addMouseListener(ml);
 //		btn1.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn2 = new JButton("5");
+		JButton btn2 = new JButton("4");
 		btn2.setBorderPainted(false);
 		btn2.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn2);
@@ -712,7 +747,7 @@ public class Core
 		btn2.addMouseListener(ml);
 //		btn2.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn3 = new JButton("5");
+		JButton btn3 = new JButton("4");
 		btn3.setBorderPainted(false);
 		btn3.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn3);
@@ -722,7 +757,7 @@ public class Core
 		btn3.addMouseListener(ml);
 //		btn3.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn4 = new JButton("5");
+		JButton btn4 = new JButton("4");
 		btn4.setBorderPainted(false);
 		btn4.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn4);
@@ -732,7 +767,7 @@ public class Core
 		btn4.addMouseListener(ml);
 //		btn4.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn5 = new JButton("5");
+		JButton btn5 = new JButton("4");
 		btn5.setBorderPainted(false);
 		btn5.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn5);
@@ -742,7 +777,7 @@ public class Core
 		btn5.addMouseListener(ml);
 //		btn5.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn6 = new JButton("5");
+		JButton btn6 = new JButton("4");
 		btn6.setBorderPainted(false);
 		btn6.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn6);
@@ -759,30 +794,51 @@ public class Core
 		gbc_panel_4.gridx = 0;
 		gbc_panel_4.gridy = 4;
 		frame.getContentPane().add(panel_4, gbc_panel_4);
+		panel_4.setLayout(new GridLayout(0, 3, 0, 0));
+
+		JPanel panel_9 = new JPanel();
+		panel_9.setBackground(new Color(224, 255, 255));
+		FlowLayout flowLayout_1 = (FlowLayout) panel_9.getLayout();
+		flowLayout_1.setAlignment(FlowLayout.LEFT);
+		panel_4.add(panel_9);
+
+		JLabel localNameScore = new JLabel("Your score: ");
+		panel_9.add(localNameScore);
+
+		localScore = new JLabel("0");
+		panel_9.add(localScore);
+
+		JPanel panel_7 = new JPanel();
+		panel_7.setBackground(new Color(224, 255, 255));
+		panel_4.add(panel_7);
 
 		turnInd11 = new JLabel(">");
 		turnInd11.setForeground(Color.WHITE);
 		turnInd11.setFont(new Font("Tahoma", Font.BOLD, 11));
-		panel_4.add(turnInd11);
+		panel_7.add(turnInd11);
 
 		turnInd12 = new JLabel(">");
 		turnInd12.setForeground(Color.WHITE);
 		turnInd12.setFont(new Font("Tahoma", Font.BOLD, 11));
-		panel_4.add(turnInd12);
+		panel_7.add(turnInd12);
 
 		playerNameLab = new JLabel("New label");
 		playerNameLab.setFont(new Font("Tahoma", Font.BOLD, 12));
-		panel_4.add(playerNameLab);
+		panel_7.add(playerNameLab);
 
 		turnInd13 = new JLabel("<");
 		turnInd13.setForeground(Color.WHITE);
 		turnInd13.setFont(new Font("Tahoma", Font.BOLD, 11));
-		panel_4.add(turnInd13);
+		panel_7.add(turnInd13);
 
 		turnInd14 = new JLabel("<");
 		turnInd14.setForeground(Color.WHITE);
 		turnInd14.setFont(new Font("Tahoma", Font.BOLD, 11));
-		panel_4.add(turnInd14);
+		panel_7.add(turnInd14);
+
+		JPanel panel_10 = new JPanel();
+		panel_10.setBackground(new Color(224, 255, 255));
+		panel_4.add(panel_10);
 		frame.setBounds(100, 100, 552, 228);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 //		txtPlayerOne.addMouseListener(ml);
