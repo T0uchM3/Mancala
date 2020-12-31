@@ -31,7 +31,25 @@ public class NetThread implements Runnable
 			String msg = new String(dp.getData(), 0, dp.getLength());
 //			TesT2.updateValueNet(strRecv);
 			if (!fromCore)
-				ConnectionWindow.foundPlayer(dp.getAddress().toString(), msg);
+			{
+
+				SwingUtilities.invokeLater(new Runnable()// running stuff on main thread!
+				{
+
+					@Override
+					public void run()
+					{
+						try
+						{
+							ConnectionWindow.foundPlayer(dp.getAddress().toString(), msg);
+						} catch (Exception e)
+						{
+							e.printStackTrace();
+						}
+					}
+				});
+			}
+
 			else
 			{
 				SwingUtilities.invokeLater(new Runnable()// running stuff on main thread!

@@ -246,7 +246,7 @@ public class ConnectionWindow extends JFrame
 	{
 		try
 		{
-
+			String fixedIp;
 			DatagramSocket ds = new DatagramSocket();
 			String str;
 			if (invited)
@@ -257,9 +257,13 @@ public class ConnectionWindow extends JFrame
 				str = playerNameTF.getText();
 
 			}
-			System.out.println("GOING");
-			InetAddress ia = InetAddress.getByName(ipAddressTF.getText());
-
+//			fixedIp = str.substring(1, avIP.length());
+			InetAddress ia;
+			if (goingFirst)
+				ia = InetAddress.getByName(destinationIp);
+			else
+				ia = InetAddress.getByName(ipAddressTF.getText());
+			System.out.println("GOING to " + ia);
 			DatagramPacket dp = new DatagramPacket(str.getBytes(), str.length(), ia, 3000);
 			ds.send(dp);
 			ds.close();
@@ -280,7 +284,7 @@ public class ConnectionWindow extends JFrame
 //			sendInv();
 			System.out.println("c");
 			if (goingFirst)
-				sendInv();
+				sendInv();// they invited us, so we inform them of our decision
 			Core.foundPlayer(playerNameTF.getText(), otherPlayerName, goingFirst, localIp, destinationIp);
 			if (!goingFirst)// no reason to move further that this while going in 2nd
 				return;
@@ -339,7 +343,7 @@ public class ConnectionWindow extends JFrame
 //				if (!start)
 				if (!goingFirst)
 				{
-					sendInv();// they invited us, so we inform them of our decision
+					sendInv();// initial invite
 					wait(500);// delaying the thread launch make the return invite possible after search
 					chainCommands();// run a receiver just after sending an invite
 				}
