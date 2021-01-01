@@ -584,7 +584,7 @@ public class Core
 		otherNameScore = new JLabel("XYZ score: ");
 		panel_9_1.add(otherNameScore);
 
-		otherScore = new JLabel("24");
+		otherScore = new JLabel("0");
 		panel_9_1.add(otherScore);
 
 		JPanel panel_8 = new JPanel();
@@ -691,7 +691,7 @@ public class Core
 //		btn8.addMouseMotionListener(mml);
 		btn8.addMouseListener(ml);
 //		btn8.setTransferHandler(new ValueExportTransferHandler(""));
-		JButton btn7 = new JButton("2");
+		JButton btn7 = new JButton("4");
 		btn7.setBorderPainted(false);
 		btn7.setBackground(new Color(245, 245, 245));
 		panel_1.add(btn7);
@@ -782,7 +782,7 @@ public class Core
 		frame.getContentPane().add(panel_3, gbc_panel_3);
 		panel_3.setLayout(new GridLayout(0, 6, 2, 0));
 
-		JButton btn1 = new JButton("0");
+		JButton btn1 = new JButton("4");
 		btn1.setBorderPainted(false);
 		btn1.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn1);
@@ -794,7 +794,7 @@ public class Core
 		btn1.addMouseListener(ml);
 //		btn1.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn2 = new JButton("0");
+		JButton btn2 = new JButton("4");
 		btn2.setBorderPainted(false);
 		btn2.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn2);
@@ -805,7 +805,7 @@ public class Core
 		btn2.addMouseListener(ml);
 //		btn2.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn3 = new JButton("0");
+		JButton btn3 = new JButton("4");
 		btn3.setBorderPainted(false);
 		btn3.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn3);
@@ -816,7 +816,7 @@ public class Core
 		btn3.addMouseListener(ml);
 //		btn3.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn4 = new JButton("0");
+		JButton btn4 = new JButton("4");
 		btn4.setBorderPainted(false);
 		btn4.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn4);
@@ -827,7 +827,7 @@ public class Core
 		btn4.addMouseListener(ml);
 //		btn4.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn5 = new JButton("0");
+		JButton btn5 = new JButton("4");
 		btn5.setBorderPainted(false);
 		btn5.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn5);
@@ -838,7 +838,7 @@ public class Core
 		btn5.addMouseListener(ml);
 //		btn5.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn6 = new JButton("1");
+		JButton btn6 = new JButton("4");
 		btn6.setBorderPainted(false);
 		btn6.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn6);
@@ -867,7 +867,7 @@ public class Core
 		JLabel localNameScore = new JLabel("Your score: ");
 		panel_9.add(localNameScore);
 
-		localScore = new JLabel("15");
+		localScore = new JLabel("0");
 		panel_9.add(localScore);
 
 		JPanel panel_7 = new JPanel();
