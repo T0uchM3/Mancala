@@ -9,14 +9,9 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.Transferable;
-import java.awt.dnd.DnDConstants;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -28,12 +23,10 @@ import java.util.Timer;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 
 public class Core
@@ -46,6 +39,8 @@ public class Core
 	static ConnectionWindow conWin;
 	static JButton btnDrop;
 	static ArrayList<JButton> btnList = new ArrayList<JButton>();
+	static ArrayList<JButton> upperBtnList = new ArrayList<JButton>();
+	static ArrayList<JButton> lowerBtnList = new ArrayList<JButton>();
 	static Core window;
 	static boolean inFirst = false;
 	static String otherPlayerIp;
@@ -71,6 +66,8 @@ public class Core
 	static JLabel midLab;
 	static JLabel arrowDown;
 	static JLabel arrowUp;
+	static JButton midBtn;
+	static boolean finale = false;
 
 	/**
 	 * Launch the application.
@@ -181,6 +178,32 @@ public class Core
 			timer.cancel();
 			timer = new Timer();
 			timer.schedule(new BlinkThread(1), 0, 500);
+		}
+			break;
+		case "004":
+		{
+			System.out.println("COMMAND  " + command);
+			System.out.println("CONTEXT  " + context);
+
+			if (context.substring(0, 1).equals("L"))
+			{
+				otherScore.setText(context.substring(1, context.length()));
+				midLab.setText("Game over!");
+			}
+			if (context.substring(0, 1).equals("D"))
+			{
+				otherScore.setText(context.substring(1, context.length()));
+				midLab.setText("24-24 Draw");
+			}
+			if (context.substring(0, 1).equals("W"))
+			{
+				otherScore.setText(context.substring(1, context.length()));
+				midLab.setText("You win");
+			}
+			playable = false;
+			timer.cancel();
+			timer = new Timer();
+			timer.schedule(new BlinkThread(3), 0, 500);
 		}
 			break;
 		}
@@ -294,40 +317,27 @@ public class Core
 		}
 	}
 
-	MouseMotionListener mml = new MouseMotionListener()
+	static boolean areTheySafe()
 	{
-
-		@Override
-		public void mouseMoved(MouseEvent e)
+		boolean areThey = false;
+		for (int i = 0; i < upperBtnList.size(); i++)
 		{
-			// TODO Auto-generated method stub
-
+			if (!upperBtnList.get(i).getText().equals("0"))
+				areThey = true;
 		}
+		return areThey;
+	}
 
-		@Override
-		public void mouseDragged(MouseEvent e)
+	static boolean areWeSafe()
+	{
+		boolean areWe = false;
+		for (int i = 0; i < lowerBtnList.size(); i++)
 		{
-			// TODO Auto-generated method stub
-			JComponent jc = (JComponent) e.getSource();
-			TransferHandler th = jc.getTransferHandler();
-			th.exportAsDrag(jc, e, TransferHandler.COPY);
-			for (int i = 0; i < btnList.size(); i++)
-			{
-				if (jc.getName() == btnList.get(i).getName())
-				{
-					btnList.get(i).setTransferHandler(new ValueExportTransferHandler(""));
-					for (int j = 0; j < btnList.size(); j++)
-					{
-						if (btnList.get(j).getName() != btnList.get(i).getName())
-						{
-							btnList.get(j).setTransferHandler(new ValueImportTransferHandler());
-						}
-
-					}
-				}
-			}
+			if (!lowerBtnList.get(i).getText().equals("0"))
+				areWe = true;
 		}
-	};
+		return areWe;
+	}
 
 	static void innerDistribution(String bName)
 	{
@@ -411,8 +421,11 @@ public class Core
 		if (lastBtn.getText().equals("2") || lastBtn.getText().equals("3"))
 		{
 			int newScore = (Integer.parseInt(localScore.getText())) + (Integer.parseInt(lastBtn.getText()));
-			if (playable)// we don't want to calculate the score when it's not our turn
+			if (playable)
+			{// we don't want to calculate the score when it's not our turn
 				localScore.setText(newScore + "");
+			}
+
 			lastBtn.setText("0");
 			int val = Integer.parseInt(lastBtn.getName().substring(3, lastBtn.getName().length()));
 			val--;
@@ -437,14 +450,47 @@ public class Core
 
 		innerDistribution(jc.getName());
 
-		// at this point, the turn ended and the score got calculated
-		sending("003" + "btn" + (Integer.parseInt(jc.getName().substring(3, jc.getName().length())) + 6) + "#"
-				+ localScore.getText());
+		if ((Integer.parseInt(localScore.getText()) <= 24) && (Integer.parseInt(otherScore.getText()) != 24)
+				&& (areTheySafe()) && (areWeSafe()))// normal play without zeroing them or us
+		{
+			// at this point, the turn ended and the score got calculated
+			sending("003" + "btn" + (Integer.parseInt(jc.getName().substring(3, jc.getName().length())) + 6) + "#"
+					+ localScore.getText());
+			midLab.setText(otherPlayerName + "'s turn");
+			// *****************
+			timer.cancel();
+			timer = new Timer();
+			timer.schedule(new BlinkThread(2), 0, 500);
+		}
+		if (localScore.getText().equals("24") && otherScore.getText().equals("24"))
+		{
+			midLab.setText("24-24 Draw");
+			sending("004" + "D" + localScore.getText());// D for draw
+			// ******************
+			timer.cancel();
+			timer = new Timer();
+			timer.schedule(new BlinkThread(3), 0, 500);
+		}
+		if ((Integer.parseInt(localScore.getText()) >= 25) || (!areTheySafe()))// zeroing them or getting 25+ score
+		{
+			midLab.setText("You win");
+			sending("004" + "L" + localScore.getText());// L for lost
+			// ******************
+			timer.cancel();
+			timer = new Timer();
+			timer.schedule(new BlinkThread(3), 0, 500);
+		}
+		if (!areWeSafe() && !(localScore.getText().equals("24") && otherScore.getText().equals("24")))
+		{
+			midLab.setText("You lost");
+			sending("004" + "W" + localScore.getText());// W for Win
+			// ******************
+			timer.cancel();
+			timer = new Timer();
+			timer.schedule(new BlinkThread(3), 0, 500);
+		}
+
 		playable = false;
-		midLab.setText(otherPlayerName + "'s turn");
-		timer.cancel();
-		timer = new Timer();
-		timer.schedule(new BlinkThread(2), 0, 500);
 
 		wait(500);
 		receiving();
@@ -538,7 +584,7 @@ public class Core
 		otherNameScore = new JLabel("XYZ score: ");
 		panel_9_1.add(otherNameScore);
 
-		otherScore = new JLabel("0");
+		otherScore = new JLabel("24");
 		panel_9_1.add(otherScore);
 
 		JPanel panel_8 = new JPanel();
@@ -595,6 +641,7 @@ public class Core
 		panel_1.add(btn12);
 		btn12.setName("btn12");
 		btnList.add(btn12);
+		upperBtnList.add(btn12);
 //		btn12.addMouseMotionListener(mml);
 		btn12.addMouseListener(ml);
 //		btn12.setTransferHandler(new ValueExportTransferHandler(""));
@@ -605,6 +652,7 @@ public class Core
 		panel_1.add(btn11);
 		btn11.setName("btn11");
 		btnList.add(btn11);
+		upperBtnList.add(btn11);
 //		btn11.addMouseMotionListener(mml);
 		btn11.addMouseListener(ml);
 //		btn11.setTransferHandler(new ValueExportTransferHandler(""));
@@ -615,6 +663,7 @@ public class Core
 		panel_1.add(btn10);
 		btn10.setName("btn10");
 		btnList.add(btn10);
+		upperBtnList.add(btn10);
 //		btn10.addMouseMotionListener(mml);
 		btn10.addMouseListener(ml);
 //		btn10.setTransferHandler(new ValueExportTransferHandler(""));
@@ -626,6 +675,7 @@ public class Core
 		panel_1.add(btn9);
 		btn9.setName("btn9");
 		btnList.add(btn9);
+		upperBtnList.add(btn9);
 //		btn9.addMouseMotionListener(mml);
 		btn9.addMouseListener(ml);
 //		btn9.setTransferHandler(new ValueExportTransferHandler(""));
@@ -637,15 +687,17 @@ public class Core
 		panel_1.add(btn8);
 		btn8.setName("btn8");
 		btnList.add(btn8);
+		upperBtnList.add(btn8);
 //		btn8.addMouseMotionListener(mml);
 		btn8.addMouseListener(ml);
 //		btn8.setTransferHandler(new ValueExportTransferHandler(""));
-		JButton btn7 = new JButton("4");
+		JButton btn7 = new JButton("2");
 		btn7.setBorderPainted(false);
 		btn7.setBackground(new Color(245, 245, 245));
 		panel_1.add(btn7);
 		btn7.setName("btn7");
 		btnList.add(btn7);
+		upperBtnList.add(btn7);
 //		btn7.addMouseMotionListener(mml);
 		btn7.addMouseListener(ml);
 //		btn7.setTransferHandler(new ValueExportTransferHandler(""));
@@ -684,6 +736,10 @@ public class Core
 
 		midLab = new JLabel("Who go first?");
 		panel_13.add(midLab);
+
+		midBtn = new JButton("Restart?");
+		panel_13.add(midBtn);
+		midBtn.setVisible(false);
 
 		JPanel panel_12 = new JPanel();
 		panel_12.setOpaque(false);
@@ -726,63 +782,69 @@ public class Core
 		frame.getContentPane().add(panel_3, gbc_panel_3);
 		panel_3.setLayout(new GridLayout(0, 6, 2, 0));
 
-		JButton btn1 = new JButton("4");
+		JButton btn1 = new JButton("0");
 		btn1.setBorderPainted(false);
 		btn1.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn1);
 		btn1.setName("btn1");
 		btnList.add(btn1);
+		lowerBtnList.add(btn1);
 
 //		btn1.addMouseMotionListener(mml);
 		btn1.addMouseListener(ml);
 //		btn1.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn2 = new JButton("4");
+		JButton btn2 = new JButton("0");
 		btn2.setBorderPainted(false);
 		btn2.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn2);
 		btn2.setName("btn2");
 		btnList.add(btn2);
+		lowerBtnList.add(btn2);
 //		btn2.addMouseMotionListener(mml);
 		btn2.addMouseListener(ml);
 //		btn2.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn3 = new JButton("4");
+		JButton btn3 = new JButton("0");
 		btn3.setBorderPainted(false);
 		btn3.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn3);
 		btn3.setName("btn3");
 		btnList.add(btn3);
+		lowerBtnList.add(btn3);
 //		btn3.addMouseMotionListener(mml);
 		btn3.addMouseListener(ml);
 //		btn3.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn4 = new JButton("4");
+		JButton btn4 = new JButton("0");
 		btn4.setBorderPainted(false);
 		btn4.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn4);
 		btn4.setName("btn4");
 		btnList.add(btn4);
+		lowerBtnList.add(btn4);
 //		btn4.addMouseMotionListener(mml);
 		btn4.addMouseListener(ml);
 //		btn4.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn5 = new JButton("4");
+		JButton btn5 = new JButton("0");
 		btn5.setBorderPainted(false);
 		btn5.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn5);
 		btn5.setName("btn5");
 		btnList.add(btn5);
+		lowerBtnList.add(btn5);
 //		btn5.addMouseMotionListener(mml);
 		btn5.addMouseListener(ml);
 //		btn5.setTransferHandler(new ValueExportTransferHandler(""));
 
-		JButton btn6 = new JButton("4");
+		JButton btn6 = new JButton("1");
 		btn6.setBorderPainted(false);
 		btn6.setBackground(new Color(245, 245, 245));
 		panel_3.add(btn6);
 		btn6.setName("btn6");
 		btnList.add(btn6);
+		lowerBtnList.add(btn6);
 //		btn6.addMouseMotionListener(mml);
 		btn6.addMouseListener(ml);
 //		btn6.setTransferHandler(new ValueExportTransferHandler(""));
@@ -805,7 +867,7 @@ public class Core
 		JLabel localNameScore = new JLabel("Your score: ");
 		panel_9.add(localNameScore);
 
-		localScore = new JLabel("0");
+		localScore = new JLabel("15");
 		panel_9.add(localScore);
 
 		JPanel panel_7 = new JPanel();
@@ -845,97 +907,4 @@ public class Core
 //		txtPlayerTwo.setTransferHandler(new TransferHandler("text"));
 	}
 
-	public static class ValueExportTransferHandler extends TransferHandler
-	{
-
-		public static final DataFlavor SUPPORTED_DATE_FLAVOR = DataFlavor.stringFlavor;
-		private String value;
-
-		public ValueExportTransferHandler(String value)
-		{
-			this.value = value;
-		}
-
-		public String getValue()
-		{
-			return value;
-		}
-
-		@Override
-		public int getSourceActions(JComponent c)
-		{
-			return DnDConstants.ACTION_COPY_OR_MOVE;
-		}
-
-		@Override
-		protected Transferable createTransferable(JComponent c)
-		{
-			Transferable t = new StringSelection(getValue());
-			return t;
-		}
-
-		@Override
-		protected void exportDone(JComponent source, Transferable data, int action)
-		{
-			super.exportDone(source, data, action);
-			// we triggering the number updates from here
-			int dragVal = Integer.parseInt(((JButton) source).getText());
-			int dropVal = Integer.parseInt(Core.btnDrop.getText());
-			// we don't go under 0
-			if (dragVal != 0)
-				Core.updateValue((dragVal - 1) + "", source.getName(), Core.btnDrop.getName(), (dropVal + 1) + "");
-			System.out.println(source.getName() + "  >>>  " + Core.btnDrop.getName());
-		}
-
-	}
-
-	public static class ValueImportTransferHandler extends TransferHandler
-	{
-
-		public static final DataFlavor SUPPORTED_DATE_FLAVOR = DataFlavor.stringFlavor;
-
-		public ValueImportTransferHandler()
-		{
-		}
-
-		@Override
-		public boolean canImport(TransferHandler.TransferSupport support)
-		{
-			return support.isDataFlavorSupported(SUPPORTED_DATE_FLAVOR);
-		}
-
-		@Override
-		public boolean importData(TransferHandler.TransferSupport support)
-		{
-			boolean accept = false;
-			if (canImport(support))
-			{
-				try
-				{
-					Transferable t = support.getTransferable();
-					Object value = t.getTransferData(SUPPORTED_DATE_FLAVOR);
-					if (value instanceof String)
-					{
-						Component component = support.getComponent();
-						if (component instanceof JLabel)
-						{
-							((JLabel) component).setText(value.toString());
-							accept = true;
-						}
-						if (component instanceof JButton)
-						{
-
-//							((JButton) component).setText(value.toString());
-							Core.btnDrop = (JButton) component;
-							System.out.println("Drop target " + component.getName());
-						}
-					}
-				} catch (Exception exp)
-				{
-					exp.printStackTrace();
-				}
-			}
-			return accept;
-		}
-	}
 }

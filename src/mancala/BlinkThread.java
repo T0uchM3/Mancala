@@ -80,6 +80,33 @@ public class BlinkThread extends TimerTask
 				Core.turnInd4.setForeground(Color.black);
 			}
 		}
+
+		if (selector == 3)
+		{
+//			System.out.println("blink up");
+			if (Core.turnInd1.getForeground() != Color.white)
+			{
+				Core.turnInd11.setForeground(Color.white);
+				Core.turnInd12.setForeground(Color.white);
+				Core.turnInd13.setForeground(Color.white);
+				Core.turnInd14.setForeground(Color.white);
+				Core.turnInd1.setForeground(Color.white);
+				Core.turnInd2.setForeground(Color.white);
+				Core.turnInd3.setForeground(Color.white);
+				Core.turnInd4.setForeground(Color.white);
+			} else
+			{
+				Core.turnInd11.setForeground(Color.black);
+				Core.turnInd12.setForeground(Color.black);
+				Core.turnInd13.setForeground(Color.black);
+				Core.turnInd14.setForeground(Color.black);
+				Core.turnInd1.setForeground(Color.black);
+				Core.turnInd2.setForeground(Color.black);
+				Core.turnInd3.setForeground(Color.black);
+				Core.turnInd4.setForeground(Color.black);
+			}
+		}
+
 	}
 
 }
