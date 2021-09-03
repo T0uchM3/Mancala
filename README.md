@@ -1,5 +1,5 @@
 # Mancala
-A basic "revamp" to the board game Mancala, made purely on Java with no external libraries.
+A basic "revamp" to the board game Mancala.
 
 <img src="https://github.com/T0uchM3/Mancala/blob/master/screenshots/221833.jpg">
 
